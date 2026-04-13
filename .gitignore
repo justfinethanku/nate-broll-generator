@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+
+# Environment & secrets
+.env
+*.env.local
+
+# Chyron assets (too large for git)
+assets/*.mov
+assets/*.mp4
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Remotion artifacts
+remotion/.cache/
