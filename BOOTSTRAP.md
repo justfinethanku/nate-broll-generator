@@ -2,6 +2,8 @@
 
 Copy everything below the line and paste it into a fresh Claude Code session. Claude will handle the entire installation.
 
+Make sure `nate-broll-generator.zip` is on the Desktop (or wherever — just update the path in step 2 below).
+
 ---
 
 I need you to install the Nate Jones Media b-roll pipeline on this computer from scratch. This is a one-time setup. Do everything below in order, checking each step as you go. Do not ask me questions unless something fails — just execute.
@@ -15,20 +17,25 @@ Check if each of these tools is installed. For any that are missing, install the
 - **Node.js**: run `node --version` — needs v20+. If missing or too old: `brew install node`
 - **pnpm**: run `pnpm --version` — if missing: `npm install -g pnpm`
 - **FFmpeg**: run `ffmpeg -version` — if missing: `brew install ffmpeg`
-- **git**: run `git --version` — if missing: `brew install git`
 - **Python 3**: run `python3 --version` — should already exist on macOS
 
 After checking/installing everything, print a summary of what was already installed vs what you had to install.
 
-## 2. Clone the repository
+## 2. Unzip the pipeline
+
+The zip file is on the Desktop. Unzip it to the home directory:
 
 ```bash
 cd ~
-git clone https://github.com/justfinethanku/nate-broll-generator.git
+unzip ~/Desktop/nate-broll-generator.zip
+mv "BROLL GENERATOR" nate-broll-generator
 cd ~/nate-broll-generator
 ```
 
-If this fails because the directory already exists, just `cd ~/nate-broll-generator && git pull` instead.
+If `~/nate-broll-generator` already exists, back it up first:
+```bash
+mv ~/nate-broll-generator ~/nate-broll-generator.bak.$(date +%s)
+```
 
 ## 3. Install Remotion dependencies
 
@@ -51,7 +58,8 @@ If there are errors, tell me what they are. If it's clean, move on.
 Run the install script. This copies the b-roll pipeline skill and the two AI agents (broll-scout and broll-builder) into `~/.claude/` so they're available in all future Claude Code sessions. It also sets the `BROLL_HOME` environment variable.
 
 ```bash
-bash ~/nate-broll-generator/claude/install.sh
+chmod +x ~/nate-broll-generator/claude/install.sh
+bash ~/nate-broll-generator/claude/install.sh ~/nate-broll-generator
 ```
 
 Verify all three files were installed:
@@ -68,15 +76,11 @@ grep BROLL_HOME ~/.claude/.env
 
 ## 6. Set up the AssemblyAI API key
 
-Add this key to `~/.claude/.env` (create the file if it doesn't exist). The key is:
+Check if ASSEMBLYAI_API_KEY already exists in `~/.claude/.env`. If it does, leave it alone. If not, ask me for the key and add it to `~/.claude/.env` like:
 
 ```
-ASSEMBLYAI_API_KEY=PASTE_KEY_HERE
+ASSEMBLYAI_API_KEY=the_key_value
 ```
-
-(The user will replace PASTE_KEY_HERE with the actual key Jon provides.)
-
-Check if ASSEMBLYAI_API_KEY already exists in `~/.claude/.env` first. If it does, leave it alone. If not, ask me for the key and add it.
 
 ## 7. Create the assets directory and check for chyrons
 
