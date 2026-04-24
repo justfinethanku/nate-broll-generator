@@ -5,7 +5,9 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Img,
   interpolate,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
   Easing,
@@ -14,18 +16,36 @@ import {
 
 /* ─── Brand Palette ─── */
 export const OB1 = {
-  BG_DARK: "#152a3e",
-  BG_MID: "#1e3d5a",
-  ORANGE: "#e8601c",
-  STEEL: "#5a8aaa",
+  BG_DARK: "#181b20",
+  BG_MID: "#2a2f36",
+  ORANGE: "#c56f41",
+  STEEL: "#71889a",
   WHITE: "#f0f4f8",
-  DIM: "#3a6080",
-  GREEN: "#22c55e",
-  CYAN: "#38bdf8",
-  RED: "#ef4444",
-  AMBER: "#f59e0b",
-  PURPLE: "#a855f7",
+  DIM: "#4d6170",
+  GREEN: "#5e9b73",
+  CYAN: "#5ea3c7",
+  RED: "#c46f73",
+  AMBER: "#c8964f",
+  PURPLE: "#8c69ba",
 } as const;
+
+export const TEMPLATE_COLOR_TOKENS = {
+  amber: OB1.AMBER,
+  cyan: OB1.CYAN,
+  green: OB1.GREEN,
+  orange: OB1.ORANGE,
+  purple: OB1.PURPLE,
+  red: OB1.RED,
+  steel: OB1.STEEL,
+} as const;
+
+export type TemplateColorToken = keyof typeof TEMPLATE_COLOR_TOKENS;
+
+export const isTemplateColorToken = (value: string): value is TemplateColorToken =>
+  value in TEMPLATE_COLOR_TOKENS;
+
+export const resolveTemplateColor = (value: string) =>
+  isTemplateColorToken(value) ? TEMPLATE_COLOR_TOKENS[value] : value;
 
 export const FONTS = {
   heading:
@@ -162,6 +182,29 @@ export interface GfxZone {
   scale: number;
 }
 
+export const DEFAULT_TEMPLATE_FRAME = {
+  width: 1920,
+  height: 1080,
+} as const;
+
+export function getDefaultGfxZone(
+  width = DEFAULT_TEMPLATE_FRAME.width,
+  height = DEFAULT_TEMPLATE_FRAME.height
+): GfxZone {
+  const safe = titleSafe(width, height);
+  const scale = height / 1080;
+  const titleZoneH = Math.round(TITLE_ZONE_HEIGHT * scale);
+  const titleZoneGap = Math.round(TITLE_ZONE_GAP * scale);
+  const innerPad = Math.round(20 * scale);
+  const gfxHeight = safe.height - titleZoneH - titleZoneGap;
+
+  return {
+    width: safe.width - innerPad * 2,
+    height: gfxHeight - innerPad * 2,
+    scale,
+  };
+}
+
 interface Scene {
   start: number;
   end: number;
@@ -228,6 +271,28 @@ export const BRollTemplate: React.FC<BRollTemplateProps> = ({
           background: `radial-gradient(ellipse at 50% 40%, ${OB1.BG_MID}, ${OB1.BG_DARK} 75%)`,
         }}
       />
+
+      <AbsoluteFill
+        style={{
+          overflow: "hidden",
+          pointerEvents: "none",
+        }}
+      >
+        <Img
+          src={staticFile("nbj-bullet.png")}
+          style={{
+            position: "absolute",
+            left: "-38%",
+            top: "50%",
+            width: "76%",
+            height: "76%",
+            objectFit: "contain",
+            opacity: 0.05,
+            mixBlendMode: "screen",
+            transform: "translateY(-51.5%)",
+          }}
+        />
+      </AbsoluteFill>
 
       {/* SVG grid overlay */}
       {showGrid && (

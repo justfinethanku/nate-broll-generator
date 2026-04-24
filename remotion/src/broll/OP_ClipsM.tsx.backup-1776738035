@@ -1,0 +1,709 @@
+import React from "react";
+import { useCurrentFrame, useVideoConfig, Img, staticFile } from "remotion";
+import {
+  BRollTemplate,
+  GfxZone,
+  OB1,
+  FONTS,
+  ease,
+  fadeInUp,
+  bouncePop,
+  slideIn,
+  countUp,
+  stagger,
+  pulse,
+} from "./shared";
+import {
+  Zap,
+  TrendingUp,
+  Layers,
+  Rocket,
+  CheckCircle2,
+  X,
+  Circle,
+  Brain,
+} from "lucide-react";
+
+type ClipSpec = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  bottomLabel: string;
+  bottomAccent?: string;
+  render: (frame: number, fps: number, zone: GfxZone) => React.ReactNode;
+};
+
+const clipSpecs: ClipSpec[] = [
+  {
+    // DESIGN SPEC for OP-037-AreGoingAfter
+    // FOCAL: Horizontal progression roadmap with 4 generation nodes (Gen 1 → Gen 2 → Gen 3 → Gen 4)
+    // SUPPORTING (3):
+    //   - Arrow connectors between nodes (zIndex 0)
+    //   - "Capability Evolution" label above (60px)
+    //   - Use case labels below each node (40px): "Simple Tasks" → "Complex Queries" → "Multi-Step" → "Mission-Critical"
+    // TEXT ON SCREEN:
+    //   - "Capability Evolution" (60px) — 20 chars
+    //   - 4 use case labels: "Simple Tasks" (12) + "Complex Queries" (15) + "Multi-Step" (10) + "Mission-Critical" (16) = 53 chars
+    //   - Total visible: 73 chars ✓
+    // PHASES:
+    //   - 0-1.5s: Title label fades in
+    //   - 1.5-3.5s: Gen nodes appear staggered left-to-right
+    //   - 3.5-5s: Arrows draw sequentially
+    //   - 5-7s: Use case labels fade in below
+    // ICONS: Zap, TrendingUp, Layers, Rocket (lucide — abstract concepts)
+    // ELEMENT COUNT: 1 title + 1 progression bar (counts as single element) = 2 main elements ✓
+    // PHONE TEST: All text 60px (title) and 40px (labels), all icons 64px in 160px nodes ✓
+    id: "OP-037-AreGoingAfter",
+    title: "Model Generations",
+    subtitle: "Capability progression",
+    bottomLabel: "Capability-First Upgrades",
+    bottomAccent: "Capability-First",
+    render: (frame, fps, zone) => {
+      const sceneFrame = Math.max(0, frame - 90);
+
+      const generations = [
+        { icon: Zap, label: "Simple Tasks", color: OB1.STEEL, delay: 45 },
+        { icon: TrendingUp, label: "Complex Queries", color: OB1.CYAN, delay: 60 },
+        { icon: Layers, label: "Multi-Step", color: OB1.ORANGE, delay: 75 },
+        { icon: Rocket, label: "Mission-Critical", color: OB1.PURPLE, delay: 90 },
+      ];
+
+      const nodeSize = Math.round(160 * zone.scale);
+      const iconSize = Math.round(64 * zone.scale);
+      const gap = zone.width * 0.08;
+
+      return (
+        <div
+          style={{
+            width: zone.width,
+            height: zone.height,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {/* Title */}
+          <div
+            style={{
+              ...fadeInUp(sceneFrame, 0),
+              fontSize: Math.round(60 * zone.scale),
+              fontFamily: FONTS.heading,
+              fontWeight: 700,
+              color: OB1.WHITE,
+              marginBottom: zone.height * 0.08,
+              zIndex: 10,
+              position: "relative",
+            }}
+          >
+            Capability Evolution
+          </div>
+
+          {/* Generation nodes row */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: gap,
+              marginBottom: zone.height * 0.06,
+            }}
+          >
+            {generations.map((gen, i) => {
+              const Icon = gen.icon;
+              const nodeOpacity = ease(sceneFrame, gen.delay, gen.delay + 20);
+              const arrowOpacity = i < generations.length - 1 ? ease(sceneFrame, 105 + i * 10, 115 + i * 10) : 0;
+
+              return (
+                <React.Fragment key={i}>
+                  {/* Node circle */}
+                  <div
+                    style={{
+                      width: nodeSize,
+                      height: nodeSize,
+                      borderRadius: "50%",
+                      backgroundColor: gen.color,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      opacity: nodeOpacity,
+                      zIndex: 1,
+                    }}
+                  >
+                    <Icon
+                      size={iconSize}
+                      color={OB1.WHITE}
+                      strokeWidth={2.5}
+                    />
+                  </div>
+
+                  {/* Arrow between nodes */}
+                  {i < generations.length - 1 && (
+                    <div
+                      style={{
+                        width: gap * 0.6,
+                        height: Math.round(4 * zone.scale),
+                        backgroundColor: OB1.DIM,
+                        opacity: arrowOpacity,
+                        zIndex: 0,
+                      }}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+
+          {/* Use case labels below nodes */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: gap,
+            }}
+          >
+            {generations.map((gen, i) => (
+              <div
+                key={i}
+                style={{
+                  width: nodeSize,
+                  textAlign: "center",
+                  fontSize: Math.round(40 * zone.scale),
+                  fontFamily: FONTS.heading,
+                  fontWeight: 600,
+                  color: OB1.WHITE,
+                  opacity: ease(sceneFrame, 150 + i * 8, 160 + i * 8),
+                  zIndex: 10,
+                  position: "relative",
+                }}
+              >
+                {gen.label}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    },
+  },
+  {
+    // DESIGN SPEC for OP-038-ThatTheseModel
+    // FOCAL: Triangle layout with 3 model logos at 140px each — claude.svg (top), Brain icon for Mythos (bottom-left), openai.svg (bottom-right)
+    // SUPPORTING (2):
+    //   - "Multi-Model Workflow" title at top (60px)
+    //   - Connecting lines between all 3 (forming triangle, zIndex 0)
+    // TEXT ON SCREEN:
+    //   - "Multi-Model Workflow" (60px) — 21 chars
+    //   - 3 model labels: "Opus 4.7" (8) + "Mythos" (6) + "ChatGPT 5.4" (11) = 25 chars
+    //   - Total visible: 46 chars ✓
+    // PHASES:
+    //   - 0-1s: Title fades in
+    //   - 1-2.5s: 3 logos pop in staggered
+    //   - 2.5-4s: Triangle lines draw
+    //   - 4-7s: Hold with subtle pulse on logos
+    // LOGOS: claude.svg, Brain icon (mythos doesn't exist), openai.svg
+    // ELEMENT COUNT: 1 title + 3 logos = 4 elements ✓
+    // PHONE TEST: Title 60px, logos 140px, labels 40px ✓
+    id: "OP-038-ThatTheseModel",
+    title: "Multi-Model Evaluation",
+    subtitle: "Mission-critical workflows",
+    bottomLabel: "Multi-Model Workflow",
+    bottomAccent: "Multi-Model",
+    render: (frame, fps, zone) => {
+      const sceneFrame = Math.max(0, frame - 90);
+
+      const logoSize = Math.round(140 * zone.scale);
+      const labelFontSize = Math.round(40 * zone.scale);
+      const titleFontSize = Math.round(60 * zone.scale);
+
+      // Triangle layout: top center, bottom-left, bottom-right
+      const radius = Math.min(zone.width, zone.height) * 0.28;
+      const centerX = zone.width * 0.5;
+      const centerY = zone.height * 0.5;
+
+      const models = [
+        {
+          name: "Opus 4.7",
+          logo: "claude",
+          angle: -Math.PI / 2, // top
+          color: OB1.ORANGE,
+          delay: 30,
+        },
+        {
+          name: "Mythos",
+          logo: null, // Brain icon
+          angle: Math.PI * 0.5 + Math.PI / 6, // bottom-left
+          color: OB1.PURPLE,
+          delay: 45,
+        },
+        {
+          name: "ChatGPT 5.4",
+          logo: "openai",
+          angle: Math.PI * 0.5 - Math.PI / 6, // bottom-right
+          color: OB1.CYAN,
+          delay: 60,
+        },
+      ];
+
+      const positions = models.map((m) => ({
+        x: centerX + Math.cos(m.angle) * radius,
+        y: centerY + Math.sin(m.angle) * radius,
+      }));
+
+      return (
+        <div
+          style={{
+            width: zone.width,
+            height: zone.height,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+          }}
+        >
+          {/* Title */}
+          <div
+            style={{
+              ...fadeInUp(sceneFrame, 0),
+              fontSize: titleFontSize,
+              fontFamily: FONTS.heading,
+              fontWeight: 700,
+              color: OB1.WHITE,
+              position: "absolute",
+              top: zone.height * 0.05,
+              zIndex: 10,
+            }}
+          >
+            Multi-Model Workflow
+          </div>
+
+          {/* Triangle connecting lines */}
+          <svg
+            width={zone.width}
+            height={zone.height}
+            style={{ position: "absolute", top: 0, left: 0, zIndex: 0 }}
+          >
+            {[0, 1, 2].map((i) => {
+              const next = (i + 1) % 3;
+              const lineOpacity = ease(sceneFrame, 75 + i * 10, 85 + i * 10);
+              return (
+                <line
+                  key={i}
+                  x1={positions[i].x}
+                  y1={positions[i].y}
+                  x2={positions[next].x}
+                  y2={positions[next].y}
+                  stroke={OB1.DIM}
+                  strokeWidth={Math.round(3 * zone.scale)}
+                  opacity={lineOpacity}
+                />
+              );
+            })}
+          </svg>
+
+          {/* Model nodes */}
+          {models.map((model, i) => {
+            const nodeX = positions[i].x;
+            const nodeY = positions[i].y;
+            const pulseVal = pulse(sceneFrame - 120, 0.03);
+
+            return (
+              <div
+                key={i}
+                style={{
+                  position: "absolute",
+                  left: nodeX,
+                  top: nodeY,
+                  transform: "translate(-50%, -50%)",
+                }}
+              >
+                <div
+                  style={{
+                    ...bouncePop(sceneFrame, model.delay, fps),
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: Math.round(12 * zone.scale),
+                  }}
+                >
+                  {/* Logo or icon */}
+                  <div
+                    style={{
+                      width: logoSize,
+                      height: logoSize,
+                      borderRadius: "50%",
+                      backgroundColor: model.color,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      opacity: 0.9 + pulseVal * 0.1,
+                      zIndex: 1,
+                    }}
+                  >
+                    {model.logo ? (
+                      <Img
+                        src={staticFile(`logos/${model.logo}.svg`)}
+                        style={{
+                          width: Math.round(logoSize * 0.6),
+                          height: Math.round(logoSize * 0.6),
+                          filter: "brightness(0) invert(1)",
+                        }}
+                      />
+                    ) : (
+                      <Brain
+                        size={Math.round(logoSize * 0.5)}
+                        color={OB1.WHITE}
+                        strokeWidth={2}
+                      />
+                    )}
+                  </div>
+
+                  {/* Label */}
+                  <div
+                    style={{
+                      fontSize: labelFontSize,
+                      fontFamily: FONTS.heading,
+                      fontWeight: 600,
+                      color: OB1.WHITE,
+                      textAlign: "center",
+                      zIndex: 10,
+                      position: "relative",
+                    }}
+                  >
+                    {model.name}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    },
+  },
+  {
+    // DESIGN SPEC for OP-039-OkayBecauseWe
+    // FOCAL: 2x2 quadrant matrix with axes labels — X-axis "Cost" (Low → High), Y-axis "Capability" (Low → High)
+    // SUPPORTING (3):
+    //   - Green checkmark in top-left quadrant (High Capability / Low Cost) with label "Ideal" (60px check, 48px label)
+    //   - Red X in bottom-right quadrant (Low Capability / High Cost) with label "Avoid" (60px X, 48px label)
+    //   - Amber circle in top-right (High/High) with label "Premium" (48px)
+    // TEXT ON SCREEN:
+    //   - Axis labels: "Low" (3) + "High" (4) × 2 = 14 chars
+    //   - "Capability" (10) + "Cost" (4) = 14 chars
+    //   - Quadrant labels: "Ideal" (5) + "Avoid" (5) + "Premium" (7) = 17 chars
+    //   - Total visible: 45 chars ✓
+    // PHASES:
+    //   - 0-1s: Axes draw
+    //   - 1-2s: Axis labels appear
+    //   - 2-3.5s: Green check (top-left) appears
+    //   - 3.5-5s: Red X (bottom-right) appears
+    //   - 5-6.5s: Amber circle (top-right) appears
+    //   - 6.5-7s: Hold
+    // ICONS: CheckCircle2, X, Circle (lucide)
+    // ELEMENT COUNT: 1 matrix + 3 quadrant markers = 4 elements ✓
+    // PHONE TEST: All labels ≥40px, icons 60px+ ✓
+    id: "OP-039-OkayBecauseWe",
+    title: "Model Selection",
+    subtitle: "Production deployment criteria",
+    bottomLabel: "Fit × Cost Tradeoff",
+    bottomAccent: "Fit × Cost",
+    render: (frame, fps, zone) => {
+      const sceneFrame = Math.max(0, frame - 90);
+
+      const matrixSize = Math.min(zone.width, zone.height) * 0.65;
+      const centerX = zone.width * 0.5;
+      const centerY = zone.height * 0.5;
+
+      const axisLabelSize = Math.round(44 * zone.scale);
+      const axisTitleSize = Math.round(48 * zone.scale);
+      const quadrantLabelSize = Math.round(48 * zone.scale);
+      const iconSize = Math.round(72 * zone.scale);
+
+      return (
+        <div
+          style={{
+            width: zone.width,
+            height: zone.height,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+          }}
+        >
+          {/* Axes */}
+          <svg
+            width={zone.width}
+            height={zone.height}
+            style={{ position: "absolute", top: 0, left: 0, zIndex: 0 }}
+          >
+            {/* Vertical axis (Capability) */}
+            <line
+              x1={centerX - matrixSize * 0.5}
+              y1={centerY - matrixSize * 0.5}
+              x2={centerX - matrixSize * 0.5}
+              y2={centerY + matrixSize * 0.5}
+              stroke={OB1.STEEL}
+              strokeWidth={Math.round(3 * zone.scale)}
+              opacity={ease(sceneFrame, 0, 20)}
+            />
+            {/* Horizontal axis (Cost) */}
+            <line
+              x1={centerX - matrixSize * 0.5}
+              y1={centerY + matrixSize * 0.5}
+              x2={centerX + matrixSize * 0.5}
+              y2={centerY + matrixSize * 0.5}
+              stroke={OB1.STEEL}
+              strokeWidth={Math.round(3 * zone.scale)}
+              opacity={ease(sceneFrame, 0, 20)}
+            />
+          </svg>
+
+          {/* Y-axis label (Capability) - left side */}
+          <div
+            style={{
+              position: "absolute",
+              left: centerX - matrixSize * 0.5 - zone.width * 0.12,
+              top: centerY,
+              transform: "translateY(-50%) rotate(-90deg)",
+              fontSize: axisTitleSize,
+              fontFamily: FONTS.heading,
+              fontWeight: 600,
+              color: OB1.WHITE,
+              opacity: ease(sceneFrame, 30, 45),
+              zIndex: 10,
+            }}
+          >
+            Capability
+          </div>
+
+          {/* Y-axis tick labels */}
+          <div
+            style={{
+              position: "absolute",
+              left: centerX - matrixSize * 0.5 - zone.width * 0.06,
+              top: centerY - matrixSize * 0.4,
+              fontSize: axisLabelSize,
+              fontFamily: FONTS.heading,
+              fontWeight: 500,
+              color: OB1.DIM,
+              opacity: ease(sceneFrame, 30, 45),
+              zIndex: 10,
+            }}
+          >
+            High
+          </div>
+          <div
+            style={{
+              position: "absolute",
+              left: centerX - matrixSize * 0.5 - zone.width * 0.06,
+              top: centerY + matrixSize * 0.4,
+              fontSize: axisLabelSize,
+              fontFamily: FONTS.heading,
+              fontWeight: 500,
+              color: OB1.DIM,
+              opacity: ease(sceneFrame, 30, 45),
+              zIndex: 10,
+            }}
+          >
+            Low
+          </div>
+
+          {/* X-axis label (Cost) - bottom */}
+          <div
+            style={{
+              position: "absolute",
+              left: centerX,
+              top: centerY + matrixSize * 0.5 + zone.height * 0.1,
+              transform: "translateX(-50%)",
+              fontSize: axisTitleSize,
+              fontFamily: FONTS.heading,
+              fontWeight: 600,
+              color: OB1.WHITE,
+              opacity: ease(sceneFrame, 30, 45),
+              zIndex: 10,
+            }}
+          >
+            Cost
+          </div>
+
+          {/* X-axis tick labels */}
+          <div
+            style={{
+              position: "absolute",
+              left: centerX - matrixSize * 0.35,
+              top: centerY + matrixSize * 0.5 + zone.height * 0.04,
+              fontSize: axisLabelSize,
+              fontFamily: FONTS.heading,
+              fontWeight: 500,
+              color: OB1.DIM,
+              opacity: ease(sceneFrame, 30, 45),
+              zIndex: 10,
+            }}
+          >
+            Low
+          </div>
+          <div
+            style={{
+              position: "absolute",
+              left: centerX + matrixSize * 0.35,
+              top: centerY + matrixSize * 0.5 + zone.height * 0.04,
+              fontSize: axisLabelSize,
+              fontFamily: FONTS.heading,
+              fontWeight: 500,
+              color: OB1.DIM,
+              opacity: ease(sceneFrame, 30, 45),
+              zIndex: 10,
+            }}
+          >
+            High
+          </div>
+
+          {/* Top-left quadrant: GREEN CHECK (Ideal) */}
+          <div
+            style={{
+              position: "absolute",
+              left: centerX - matrixSize * 0.25,
+              top: centerY - matrixSize * 0.25,
+              transform: "translate(-50%, -50%)",
+            }}
+          >
+            <div
+              style={{
+                ...bouncePop(sceneFrame, 60, fps),
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: Math.round(12 * zone.scale),
+              }}
+            >
+              <CheckCircle2
+                size={iconSize}
+                color={OB1.GREEN}
+                strokeWidth={3}
+              />
+              <div
+                style={{
+                  fontSize: quadrantLabelSize,
+                  fontFamily: FONTS.heading,
+                  fontWeight: 700,
+                  color: OB1.GREEN,
+                  zIndex: 10,
+                  position: "relative",
+                }}
+              >
+                Ideal
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom-right quadrant: RED X (Avoid) */}
+          <div
+            style={{
+              position: "absolute",
+              left: centerX + matrixSize * 0.25,
+              top: centerY + matrixSize * 0.25,
+              transform: "translate(-50%, -50%)",
+            }}
+          >
+            <div
+              style={{
+                ...bouncePop(sceneFrame, 105, fps),
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: Math.round(12 * zone.scale),
+              }}
+            >
+              <X
+                size={iconSize}
+                color={OB1.RED}
+                strokeWidth={3}
+              />
+              <div
+                style={{
+                  fontSize: quadrantLabelSize,
+                  fontFamily: FONTS.heading,
+                  fontWeight: 700,
+                  color: OB1.RED,
+                  zIndex: 10,
+                  position: "relative",
+                }}
+              >
+                Avoid
+              </div>
+            </div>
+          </div>
+
+          {/* Top-right quadrant: AMBER CIRCLE (Premium) */}
+          <div
+            style={{
+              position: "absolute",
+              left: centerX + matrixSize * 0.25,
+              top: centerY - matrixSize * 0.25,
+              transform: "translate(-50%, -50%)",
+            }}
+          >
+            <div
+              style={{
+                ...bouncePop(sceneFrame, 150, fps),
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: Math.round(12 * zone.scale),
+              }}
+            >
+              <Circle
+                size={iconSize}
+                color={OB1.AMBER}
+                strokeWidth={3}
+                fill={OB1.AMBER}
+                fillOpacity={0.3}
+              />
+              <div
+                style={{
+                  fontSize: quadrantLabelSize,
+                  fontFamily: FONTS.heading,
+                  fontWeight: 700,
+                  color: OB1.AMBER,
+                  zIndex: 10,
+                  position: "relative",
+                }}
+              >
+                Premium
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    },
+  },
+];
+
+// DO NOT MODIFY this function
+const makeClip = (spec: ClipSpec): React.FC => {
+  const ClipComponent: React.FC = () => {
+    const frame = useCurrentFrame();
+    const { fps } = useVideoConfig();
+    return (
+      <BRollTemplate
+        title={spec.title}
+        subtitle={spec.subtitle}
+        bottomLabel={spec.bottomLabel}
+        bottomAccent={spec.bottomAccent}
+        scenes={[
+          {
+            start: 90,
+            end: 300,
+            render: (_f, _progress, zone) => spec.render(frame, fps, zone),
+          },
+        ]}
+      />
+    );
+  };
+  ClipComponent.displayName = spec.id;
+  return ClipComponent;
+};
+
+export const OP_CLIPS_M = clipSpecs.map((spec) => ({
+  id: spec.id,
+  component: makeClip(spec),
+}));

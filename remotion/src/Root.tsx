@@ -12,24 +12,56 @@ import { Composition } from "remotion";
 
 // Example batch (reference — remove when adding your first real video)
 import { AG_CLIPS_A } from "./broll/_examples/AG_ClipsA";
+import { CCL_COMPS } from "./broll/CCLBatch";
+import { SS_COMPS } from "./broll/SSBatch";
+import { TEMPLATE_DEMOS } from "./broll/TemplateDemos";
+import { AP_COMPS } from "./broll/APBatch";
+import { AF_COMPS } from "./broll/AFBatch";
+import { BYOC_COMPS } from "./broll/BYOCBatch";
+import { AIA_COMPS } from "./broll/AIABatch";
+import { NK_COMPS } from "./broll/NKBatch";
+import { WM_COMPS } from "./broll/WMBatch";
+import { OP_COMPS } from "./broll/OPBatch";
+import { CD_COMPS } from "./broll/CDBatch";
+import { TW_COMPS } from "./broll/TWBatch";
+import { CC_COMPS } from "./broll/CCBatch";
 
 // ↓ Import new video batches here
 // import { XX_COMPS } from "./broll/XXBatch";
 
-const BROLL_COMPS = [
+type ClipEntry = {
+  id: string;
+  component: React.FC;
+  durationInFrames?: number;
+};
+
+const BROLL_COMPS: ClipEntry[] = [
   ...AG_CLIPS_A, // Example — remove when adding your first real video
+  ...CCL_COMPS,
+  ...SS_COMPS,
+  ...TEMPLATE_DEMOS,
+  ...AP_COMPS,
+  ...AF_COMPS,
+  ...BYOC_COMPS,
+  ...AIA_COMPS,
+  ...NK_COMPS,
+  ...WM_COMPS,
+  ...OP_COMPS,
+  ...CD_COMPS,
+  ...TW_COMPS,
+  ...CC_COMPS,
   // ...XX_COMPS,  ← add new batches here (one line per video)
 ];
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      {BROLL_COMPS.map(({ id, component }) => (
+      {BROLL_COMPS.map(({ id, component, durationInFrames }) => (
         <Composition
           key={id}
           id={id}
           component={component}
-          durationInFrames={300}
+          durationInFrames={durationInFrames ?? 300}
           fps={30}
           width={1920}
           height={1080}

@@ -19,7 +19,7 @@ You are executing the automated b-roll pipeline for Nate Jones Media. This pipel
 6. **15-second minimum gap between clip start times.** Clips are 10s each — this guarantees 5s of talking head between clips.
 7. **Every clip must be a bespoke data visualization.** Text-only clips are a failure. Use SVGs, charts, diagrams, animated icons, node graphs. Each must be a handcrafted motion graphic.
 8. **Render sequentially.** Never parallelize renders — Chrome instances conflict.
-9. **QC screenshots at frames 50, 150, 250** before rendering. Check readability, overlap, and sizing.
+9. **Mandatory QC screenshots at frames 150 and 270** before rendering. Missing stills mean the clip is not built yet.
 10. **Always run compositing AND chyrons** as the final step. The pipeline is not done until `_YT.mp4` and `_SS.mp4` exist.
 11. **Never use specific AI model version names** unless the transcript explicitly says them. Training data is obsolete. Use company/product names: "OpenAI" or "ChatGPT" (not "GPT-4 Turbo"), "Claude" (not "Claude 3.5 Sonnet"), "Gemini" (not "Gemini 1.5 Pro"). If the speaker says a specific model name, match it exactly.
 12. **Readability minimums are non-negotiable.** All text ≥40px (`Math.round(40 * zone.scale)`). Max 4 elements per frame (1 dominant + ≤3 supporters). Total visible text ≤90 characters per clip. Lines never pass through container borders. No decorative empty boxes. Builders write a design spec BEFORE coding. See the broll-builder agent definition for the full rule set.
@@ -195,7 +195,7 @@ The builder agents have the COMPLETE shared.tsx API contract embedded — all Ty
 
 **Wait for all builders to complete** before proceeding.
 
-**Update manifest:** Set each clip's status to `built` as builders finish.
+**Update manifest:** Set each clip's status to `built` only after the TSX exists AND mandatory QC stills at frames 150 and 270 exist for that clip.
 
 ### Step 3: Validate TypeScript
 
@@ -276,7 +276,15 @@ The project includes a comprehensive logo library at `public/logos/`. The builde
 
 ### Step 5: QC Screenshots
 
-For EACH clip, take screenshots at frames 150 and 270 (the 9-second mark catches most failures):
+For EACH clip, the builder stage must already have rendered screenshots at frames 150 and 270. Before QC starts, verify those files exist:
+
+```bash
+python3 "$BROLL_HOME/scripts/verify_qc_stills.py" "<QC_DIR>" CL-NNN-ShortName ...
+```
+
+If any still is missing, the clip is not "built" yet. Go back to the builder stage.
+
+For review, use screenshots at frames 150 and 270:
 
 ```bash
 cd $BROLL_HOME/remotion
@@ -297,16 +305,25 @@ pnpm exec remotion still src/index.ts CL-NNN-ShortName out/qc-cl-NNN-f270.png --
 6. **No empty decorative containers:** No bracket frames, no empty squares "for visual rhythm," no faint background flourishes. Every element on screen carries meaning.
 7. **Lines terminate at container edges:** Connecting lines must NOT pass through container borders. They stop at the edge.
 8. **Radial layouts spread evenly:** Branches around a center are distributed across ≥270°, never bunched.
+9. **Geometry is design:** Nodes with icon/title/subtitle must reserve separate lanes for each. If the layout only works because elements are visually colliding, the clip fails.
+10. **No border collisions:** If any icon, title, or subtitle touches or crosses a container stroke, the clip fails.
 
 **Mechanical (existing):**
 
-9. **No clipping:** At frame 270, verify NO text or icon is partially cut off at any edge of the GFX zone. If anything is clipped, the component is using hardcoded pixels instead of zone-relative sizing.
-10. **All text readable:** Every text string is fully visible — no characters obscured by lines, shapes, icons, or zone boundaries.
-11. **No overlapping elements:** Text is not covered by any visual element. Lines don't pass through text or icons.
-12. **Content fits the GFX zone:** Nothing bleeds into the title zone area. The bottom label (pill) is cleanly separated from the graphics above.
-13. **Real logos used:** Any real company/product (Claude, ChatGPT, Copilot, Excel, etc.) uses a brand logo from the logo pack, not a generic lucide icon.
-14. **Not text-only:** Must have visual elements — icons, charts, diagrams, data visualizations.
-15. **Brand colors correct:** Dark blue gradient background, OB1 palette colors, no stray defaults.
+11. **No clipping:** At frame 270, verify NO text or icon is partially cut off at any edge of the GFX zone. If anything is clipped, the component is using hardcoded pixels instead of zone-relative sizing.
+12. **All text readable:** Every text string is fully visible — no characters obscured by lines, shapes, icons, or zone boundaries.
+13. **No overlapping elements:** Text is not covered by any visual element. Lines don't pass through text or icons.
+14. **Content fits the GFX zone:** Nothing bleeds into the title zone area. The bottom label (pill) is cleanly separated from the graphics above.
+15. **Real logos used:** Any real company/product (Claude, ChatGPT, Copilot, Excel, etc.) uses a brand logo from the logo pack, not a generic lucide icon.
+16. **Not text-only:** Must have visual elements — icons, charts, diagrams, data visualizations.
+17. **Brand colors correct:** Dark blue gradient background, OB1 palette colors, no stray defaults.
+18. **QA is not a geometry backstop:** border collisions, undersized subtitle cards, badge overlap, and tight scene stacking should already have been blocked by the primitives or spacing guards. If QA is catching those, send the clip back as a build-stage failure.
+
+**Review method (mandatory):**
+
+1. Inspect each QC PNG at full native size first.
+2. Only after that use contact sheets to spot batch-level pattern failures.
+3. Never approve from contact sheets alone.
 
 **Update manifest:** Set each clip's status to `qc'd` as it passes.
 
@@ -424,5 +441,5 @@ Update manifest: set all clip statuses to `rendered`. Report file sizes and dura
 | Wrong resolution | Assumed instead of checking | Run ffprobe on source video in Step 0, render at matching resolution |
 | Composited without approval | Skipped review step | ALWAYS pause at Step 7 and wait for user to approve b-roll before compositing |
 | Graphics clipped/cut off | Content exceeds GFX zone | Use `zone.width`/`zone.height` from render args — never hardcode pixel sizes |
-| Text blocked by visual elements | Wrong z-ordering, elements overlap text | Text last in JSX + `zIndex: 10`; lines/shapes at `zIndex: 0`; verify at frames 50/150/250 |
+| Text blocked by visual elements | Wrong z-ordering, elements overlap text | Text last in JSX + `zIndex: 10`; lines/shapes at `zIndex: 0`; verify at frames 150/270 |
 | Lucide icons for real brands | Logo pack not used | Check `aliases.json`, use `staticFile("logos/SLUG.svg")` — lucide for real brands = QC failure |

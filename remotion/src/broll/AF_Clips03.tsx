@@ -1,0 +1,614 @@
+import React from "react";
+import { useCurrentFrame, useVideoConfig, Img, staticFile } from "remotion";
+import {
+  BRollTemplate,
+  GfxZone,
+  OB1,
+  FONTS,
+  ease,
+  fadeInUp,
+  bouncePop,
+  slideIn,
+  countUp,
+  stagger,
+  pulse,
+} from "./shared";
+import {
+  User,
+  Cpu,
+  ArrowRight,
+  Shield,
+} from "lucide-react";
+
+type ClipSpec = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  bottomLabel: string;
+  bottomAccent?: string;
+  render: (frame: number, fps: number, zone: GfxZone) => React.ReactNode;
+};
+
+const clipSpecs: ClipSpec[] = [
+  {
+    // DESIGN SPEC for AF-007-ConsumerRebuild
+    // FOCAL: Before/after split diagram — left side shows human user icon (labeled "Old Consumer"),
+    //        right side shows robot/CPU icon (labeled "New Consumer: AI Agent")
+    // SUPPORTING (2): Two product boxes in middle showing transition — left box labeled "Old Product"
+    //                 with arrow pointing to right box labeled "Rebuilt Product"
+    // TEXT ON SCREEN:
+    //   - "Old Consumer" (48px) — 12 chars
+    //   - "New Consumer: AI Agent" (48px) — 22 chars
+    //   - "Old Product" (48px) — 11 chars
+    //   - "Rebuilt Product" (48px) — 16 chars
+    //   Total visible: 61 chars (under 90) ✓
+    // PHASES:
+    //   - 0-2s: Left side (old consumer + old product) fades in
+    //   - 2-4s: Arrow draws
+    //   - 4-7s: Right side (new consumer + rebuilt product) fades in
+    // LOGOS: None (abstract concept)
+    // ELEMENT COUNT: 4 (2 consumers + 2 products) ✓
+    // PHONE TEST: All text 48px, icons 80px ✓
+
+    id: "AF-007-ConsumerRebuild",
+    title: "Software Rebuild",
+    subtitle: "New consumer = AI agents",
+    bottomLabel: "Everything rebuilds for agents",
+    bottomAccent: "agents",
+    render: (frame, fps, zone) => {
+      const sceneFrame = Math.max(0, frame - 90);
+
+      // Layout: two side-by-side cards with arrow between
+      const cardW = zone.width * 0.38;
+      const cardH = zone.height * 0.7;
+      const iconSize = Math.round(72 * zone.scale);
+
+      return (
+        <div
+          style={{
+            width: zone.width,
+            height: zone.height,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: Math.round(40 * zone.scale),
+          }}
+        >
+          {/* LEFT CARD: Old Consumer */}
+          <div
+            style={{
+              width: cardW,
+              height: cardH,
+              backgroundColor: OB1.BG_MID,
+              border: `${Math.round(3 * zone.scale)}px solid ${OB1.DIM}`,
+              borderRadius: Math.round(16 * zone.scale),
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: Math.round(24 * zone.scale),
+              ...fadeInUp(sceneFrame, 10),
+            }}
+          >
+            <User size={iconSize} color={OB1.STEEL} strokeWidth={2} />
+            <div
+              style={{
+                fontSize: Math.round(48 * zone.scale),
+                fontFamily: FONTS.heading,
+                fontWeight: 700,
+                color: OB1.WHITE,
+                zIndex: 10,
+                position: "relative",
+              }}
+            >
+              Human
+            </div>
+            <div
+              style={{
+                fontSize: Math.round(40 * zone.scale),
+                fontFamily: FONTS.heading,
+                fontWeight: 600,
+                color: OB1.STEEL,
+                zIndex: 10,
+                position: "relative",
+              }}
+            >
+              Old Consumer
+            </div>
+          </div>
+
+          {/* CENTER: Arrow */}
+          <div style={{ opacity: ease(sceneFrame, 60, 80), zIndex: 1 }}>
+            <ArrowRight
+              size={Math.round(64 * zone.scale)}
+              color={OB1.ORANGE}
+              strokeWidth={3}
+            />
+          </div>
+
+          {/* RIGHT CARD: AI Agent */}
+          <div
+            style={{
+              width: cardW,
+              height: cardH,
+              backgroundColor: OB1.BG_MID,
+              border: `${Math.round(3 * zone.scale)}px solid ${OB1.CYAN}`,
+              borderRadius: Math.round(16 * zone.scale),
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: Math.round(24 * zone.scale),
+              ...fadeInUp(sceneFrame, 120),
+            }}
+          >
+            <Cpu size={iconSize} color={OB1.CYAN} strokeWidth={2} />
+            <div
+              style={{
+                fontSize: Math.round(48 * zone.scale),
+                fontFamily: FONTS.heading,
+                fontWeight: 700,
+                color: OB1.WHITE,
+                zIndex: 10,
+                position: "relative",
+              }}
+            >
+              AI Agent
+            </div>
+            <div
+              style={{
+                fontSize: Math.round(40 * zone.scale),
+                fontFamily: FONTS.heading,
+                fontWeight: 600,
+                color: OB1.CYAN,
+                zIndex: 10,
+                position: "relative",
+              }}
+            >
+              New Consumer
+            </div>
+          </div>
+        </div>
+      );
+    },
+  },
+
+  {
+    // DESIGN SPEC for AF-008-JSEcosystemMigration
+    // FOCAL: Language migration flow — JavaScript logo (140px) on left, three target languages
+    //        (Rust/Go/Zig logos at 120px each) on right in vertical stack
+    // SUPPORTING (1): Three arrows from JS logo to each target logo, with "Performance" label (48px)
+    //                 centered between JS and target stack
+    // TEXT ON SCREEN:
+    //   - "JavaScript" (48px) — 10 chars
+    //   - "Rust" (48px) — 4 chars
+    //   - "Go" (48px) — 2 chars
+    //   - "Zig" (48px) — 3 chars
+    //   - "Performance Gains" (56px center label) — 17 chars
+    //   Total visible: 36 chars (well under 90) ✓
+    // PHASES:
+    //   - 0-1.5s: JS logo pops in
+    //   - 1.5-3s: Arrows draw (staggered)
+    //   - 3-5s: Target logos fade in (staggered)
+    //   - 5-7s: "Performance Gains" label appears at center
+    // LOGOS: javascript.svg, rust.svg, go.svg, zig.svg
+    // ELEMENT COUNT: 2 groups (JS source + target stack) + 1 center label = 3 ✓
+    // PHONE TEST: All logos 120-140px, text 48-56px ✓
+
+    id: "AF-008-JSEcosystemMigration",
+    title: "Language Migration",
+    subtitle: "Performance matters",
+    bottomLabel: "JavaScript ecosystem shifts to systems languages",
+    bottomAccent: "systems languages",
+    render: (frame, fps, zone) => {
+      const sceneFrame = Math.max(0, frame - 90);
+
+      const logoSize = Math.round(80 * zone.scale);
+      const circleSize = Math.round(120 * zone.scale);
+
+      const targets = [
+        { name: "Rust", logo: "rust", delay: 90 },
+        { name: "Go", logo: "go", delay: 105 },
+        { name: "Zig", logo: "zig", delay: 120 },
+      ];
+
+      return (
+        <div
+          style={{
+            width: zone.width,
+            height: zone.height,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: Math.round(40 * zone.scale),
+          }}
+        >
+          {/* TOP ROW: JavaScript logo fading out */}
+          <div style={{ ...fadeInUp(sceneFrame, 10), display: "flex", flexDirection: "column", alignItems: "center", gap: Math.round(12 * zone.scale) }}>
+            <div
+              style={{
+                width: circleSize,
+                height: circleSize,
+                borderRadius: "50%",
+                backgroundColor: "#F7DF1E",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: 0.3 + 0.7 * (1 - ease(sceneFrame, 60, 120)),
+              }}
+            >
+              <Img
+                src={staticFile("logos/javascript.svg")}
+                style={{ width: logoSize, height: logoSize }}
+              />
+            </div>
+            <div
+              style={{
+                fontSize: Math.round(48 * zone.scale),
+                fontFamily: FONTS.heading,
+                fontWeight: 600,
+                color: OB1.STEEL,
+                zIndex: 10,
+                position: "relative",
+              }}
+            >
+              JavaScript
+            </div>
+          </div>
+
+          {/* BOTTOM ROW: Three target languages in a row */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: Math.round(60 * zone.scale),
+            }}
+          >
+            {targets.map((target) => (
+              <div
+                key={target.name}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: Math.round(12 * zone.scale),
+                  ...fadeInUp(sceneFrame, target.delay),
+                }}
+              >
+                <div
+                  style={{
+                    width: circleSize,
+                    height: circleSize,
+                    borderRadius: "50%",
+                    backgroundColor: "rgba(255,255,255,0.12)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Img
+                    src={staticFile(`logos/${target.logo}.svg`)}
+                    style={{
+                      width: logoSize,
+                      height: logoSize,
+                      filter: "brightness(0) invert(1)",
+                    }}
+                  />
+                </div>
+                <div
+                  style={{
+                    fontSize: Math.round(48 * zone.scale),
+                    fontFamily: FONTS.heading,
+                    fontWeight: 600,
+                    color: OB1.WHITE,
+                    zIndex: 10,
+                    position: "relative",
+                  }}
+                >
+                  {target.name}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    },
+  },
+
+  {
+    // DESIGN SPEC for AF-009-CoEvolution
+    // FOCAL: Center icon (shield representing strict compiler at 96px) with two benefit arrows
+    //        pointing outward in opposite directions (left & right)
+    // SUPPORTING (2): Left arrow points to "Faster Agent Tooling" box (240w × 160h),
+    //                 right arrow points to "Safer Agent Code" box (240w × 160h)
+    // TEXT ON SCREEN:
+    //   - "Strict Compiler" (56px) — 15 chars
+    //   - "Faster Agent Tooling" (48px) — 20 chars
+    //   - "Safer Agent Code" (48px) — 16 chars
+    //   Total visible: 51 chars (under 90) ✓
+    // PHASES:
+    //   - 0-2s: Center compiler icon pops in with label
+    //   - 2-4s: Arrows draw outward (simultaneous)
+    //   - 4-7s: Benefit boxes fade in (staggered)
+    // LOGOS: None (shield icon for compiler)
+    // ELEMENT COUNT: 3 (compiler + 2 benefit boxes) ✓
+    // PHONE TEST: Icon 96px, all text 48-56px, boxes 240×160 ✓
+
+    id: "AF-009-CoEvolution",
+    title: "Co-Evolution",
+    subtitle: "Dual benefits",
+    bottomLabel: "Strict compilers benefit agents AND agent-generated code",
+    bottomAccent: "Strict compilers",
+    render: (frame, fps, zone) => {
+      const sceneFrame = Math.max(0, frame - 90);
+
+      const centerX = zone.width * 0.5;
+      const centerY = zone.height * 0.5;
+      const leftBoxX = zone.width * 0.2;
+      const rightBoxX = zone.width * 0.8;
+
+      return (
+        <div
+          style={{
+            width: zone.width,
+            height: zone.height,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+          }}
+        >
+          {/* CENTER: Compiler icon (Shield) */}
+          <div
+            style={{
+              position: "absolute",
+              left: centerX,
+              top: centerY,
+              transform: "translate(-50%, -50%)",
+            }}
+          >
+            <div style={{ ...bouncePop(sceneFrame, 10, fps) }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: Math.round(16 * zone.scale),
+                }}
+              >
+                <div
+                  style={{
+                    width: Math.round(160 * zone.scale),
+                    height: Math.round(160 * zone.scale),
+                    borderRadius: "50%",
+                    backgroundColor: OB1.BG_MID,
+                    border: `${Math.round(3 * zone.scale)}px solid ${OB1.PURPLE}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 1,
+                  }}
+                >
+                  <Shield
+                    size={Math.round(96 * zone.scale)}
+                    color={OB1.PURPLE}
+                    strokeWidth={2}
+                    fill={OB1.PURPLE}
+                    fillOpacity={0.2}
+                  />
+                </div>
+                <div
+                  style={{
+                    fontSize: Math.round(56 * zone.scale),
+                    fontFamily: FONTS.heading,
+                    fontWeight: 700,
+                    color: OB1.WHITE,
+                    textAlign: "center",
+                    zIndex: 10,
+                    position: "relative",
+                  }}
+                >
+                  Strict Compiler
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* LEFT ARROW */}
+          <svg
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width: zone.width,
+              height: zone.height,
+              zIndex: 0,
+              opacity: ease(sceneFrame, 60, 80),
+            }}
+          >
+            <defs>
+              <marker
+                id="arrowhead-left"
+                markerWidth="10"
+                markerHeight="10"
+                refX="9"
+                refY="3"
+                orient="auto"
+              >
+                <polygon
+                  points="0 0, 10 3, 0 6"
+                  fill={OB1.GREEN}
+                />
+              </marker>
+            </defs>
+            <line
+              x1={centerX - Math.round(80 * zone.scale)}
+              y1={centerY}
+              x2={leftBoxX + Math.round(120 * zone.scale)}
+              y2={centerY}
+              stroke={OB1.GREEN}
+              strokeWidth={Math.round(3 * zone.scale)}
+              markerEnd="url(#arrowhead-left)"
+            />
+          </svg>
+
+          {/* RIGHT ARROW */}
+          <svg
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width: zone.width,
+              height: zone.height,
+              zIndex: 0,
+              opacity: ease(sceneFrame, 60, 80),
+            }}
+          >
+            <defs>
+              <marker
+                id="arrowhead-right"
+                markerWidth="10"
+                markerHeight="10"
+                refX="9"
+                refY="3"
+                orient="auto"
+              >
+                <polygon
+                  points="0 0, 10 3, 0 6"
+                  fill={OB1.CYAN}
+                />
+              </marker>
+            </defs>
+            <line
+              x1={centerX + Math.round(80 * zone.scale)}
+              y1={centerY}
+              x2={rightBoxX - Math.round(120 * zone.scale)}
+              y2={centerY}
+              stroke={OB1.CYAN}
+              strokeWidth={Math.round(3 * zone.scale)}
+              markerEnd="url(#arrowhead-right)"
+            />
+          </svg>
+
+          {/* LEFT: "Faster Agent Tooling" box */}
+          <div
+            style={{
+              position: "absolute",
+              left: leftBoxX,
+              top: centerY,
+              transform: "translate(-50%, -50%)",
+            }}
+          >
+            <div style={{ ...fadeInUp(sceneFrame, 120) }}>
+              <div
+                style={{
+                  width: Math.round(240 * zone.scale),
+                  height: Math.round(160 * zone.scale),
+                  backgroundColor: OB1.BG_MID,
+                  border: `${Math.round(3 * zone.scale)}px solid ${OB1.GREEN}`,
+                  borderRadius: Math.round(12 * zone.scale),
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: Math.round(16 * zone.scale),
+                  boxSizing: "border-box",
+                  zIndex: 1,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: Math.round(48 * zone.scale),
+                    fontFamily: FONTS.heading,
+                    fontWeight: 600,
+                    color: OB1.GREEN,
+                    textAlign: "center",
+                    lineHeight: 1.2,
+                    zIndex: 10,
+                    position: "relative",
+                  }}
+                >
+                  Faster Agent Tooling
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT: "Safer Agent Code" box */}
+          <div
+            style={{
+              position: "absolute",
+              left: rightBoxX,
+              top: centerY,
+              transform: "translate(-50%, -50%)",
+            }}
+          >
+            <div style={{ ...fadeInUp(sceneFrame, 140) }}>
+              <div
+                style={{
+                  width: Math.round(240 * zone.scale),
+                  height: Math.round(160 * zone.scale),
+                  backgroundColor: OB1.BG_MID,
+                  border: `${Math.round(3 * zone.scale)}px solid ${OB1.CYAN}`,
+                  borderRadius: Math.round(12 * zone.scale),
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: Math.round(16 * zone.scale),
+                  boxSizing: "border-box",
+                  zIndex: 1,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: Math.round(48 * zone.scale),
+                    fontFamily: FONTS.heading,
+                    fontWeight: 600,
+                    color: OB1.CYAN,
+                    textAlign: "center",
+                    lineHeight: 1.2,
+                    zIndex: 10,
+                    position: "relative",
+                  }}
+                >
+                  Safer Agent Code
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    },
+  },
+];
+
+// DO NOT MODIFY this function
+const makeClip = (spec: ClipSpec): React.FC => {
+  const ClipComponent: React.FC = () => {
+    const frame = useCurrentFrame();
+    const { fps } = useVideoConfig();
+    return (
+      <BRollTemplate
+        title={spec.title}
+        subtitle={spec.subtitle}
+        bottomLabel={spec.bottomLabel}
+        bottomAccent={spec.bottomAccent}
+        scenes={[
+          {
+            start: 90,
+            end: 300,
+            render: (_f, _progress, zone) => spec.render(frame, fps, zone),
+          },
+        ]}
+      />
+    );
+  };
+  ClipComponent.displayName = spec.id;
+  return ClipComponent;
+};
+
+export const AF_CLIPS_03 = clipSpecs.map((spec) => ({
+  id: spec.id,
+  component: makeClip(spec),
+}));

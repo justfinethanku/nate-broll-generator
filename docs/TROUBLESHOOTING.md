@@ -1,5 +1,11 @@
 # Troubleshooting
 
+This repo is Codex-first. If an older doc mentions Claude Code or `/broll-pipeline`, use the Codex invocation instead:
+
+```text
+Use $broll-pipeline on video.mp4
+```
+
 ## Render crashes
 
 **Symptom:** Remotion render exits with a crash or segfault.
@@ -46,12 +52,12 @@ If missing, download from the shared link.
 
 **Fix:** Check the API key:
 ```bash
-grep ASSEMBLYAI ~/.claude/.env
+grep ASSEMBLYAI ~/.codex/.env
 ```
 
 If empty or wrong, update it:
 ```bash
-# Edit ~/.claude/.env and set:
+# Edit ~/.codex/.env and set:
 ASSEMBLYAI_API_KEY=your_actual_key_here
 ```
 
@@ -84,9 +90,9 @@ The `multi_composite.py` script matches `-(\d+\.\d+)\.mp4$` — if the timecode 
 
 ## Pipeline stops / session crashes
 
-**Symptom:** Claude Code session ends before the pipeline finishes.
+**Symptom:** Codex session ends before the pipeline finishes.
 
-**Fix:** Re-run `/broll-pipeline` in the same project folder. The pipeline reads `broll_manifest.md` and resumes from the last incomplete clip. You won't lose progress.
+**Fix:** Re-run `Use $broll-pipeline on video.mp4` in the same project folder. The pipeline reads `broll_manifest.md` and resumes from the last incomplete clip. You won't lose progress.
 
 ## Remotion Studio won't launch
 
@@ -103,15 +109,46 @@ If still failing, check Node version: `node --version` (need 20+).
 
 ## BROLL_HOME not set
 
-**Symptom:** Claude Code can't find the Remotion project or scripts.
+**Symptom:** Codex can't find the Remotion project or scripts.
 
 **Fix:** Re-run the install script:
 ```bash
 cd /path/to/nate-broll-generator
-./claude/install.sh
+./setup.sh codex
 ```
 
-Or manually add to `~/.claude/.env`:
+Or manually add to `~/.codex/.env`:
 ```
 BROLL_HOME=/path/to/nate-broll-generator
+```
+
+## Codex skill not available
+
+**Symptom:** Codex does not recognize `$broll-pipeline`.
+
+**Fix:**
+
+```bash
+cd /path/to/nate-broll-generator
+bash Codex/install.sh
+```
+
+Then restart Codex or open a fresh session.
+
+## Package readiness check fails
+
+**Symptom:** `./scripts/package_check.sh` reports missing files.
+
+**Fix:** Follow the reported item. The most common failures are:
+
+- missing `assets/Youtube Chyron.mov`
+- missing `assets/Substack Chyron.mov`
+- missing `ASSEMBLYAI_API_KEY` in `~/.codex/.env`
+- Remotion dependencies not installed
+
+Run:
+
+```bash
+./setup.sh codex
+./scripts/package_check.sh
 ```

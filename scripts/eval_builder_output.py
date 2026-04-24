@@ -48,7 +48,11 @@ def validate(tsx_path):
     check('BRollTemplate' in code, "Imports BRollTemplate")
     check('GfxZone' in code, "Imports GfxZone")
     check('OB1' in code, "Imports OB1")
-    check('FONTS' in code, "Uses FONTS")
+    uses_explicit_variants = 'TitleNode' in code or 'MetricNode' in code or 'SubtitleCardNode' in code
+    check('FONTS' in code or uses_explicit_variants,
+          "Uses FONTS directly or shared node primitives")
+    check(uses_explicit_variants,
+          "Uses explicit node variants")
 
     # --- Structure checks ---
     print("\n--- Structure Validation ---")
@@ -102,6 +106,8 @@ def validate(tsx_path):
           "No hardcoded 1920px SVG width")
     check('width="1080"' not in code and "width='1080'" not in code,
           "No hardcoded 1080px values")
+    check('DiagramNode' not in code,
+          "Does not use retired DiagramNode primitive")
 
     # Check for sceneFrame offset
     check('frame - 90' in code or 'frame- 90' in code or 'frame -90' in code,
@@ -138,17 +144,25 @@ def validate(tsx_path):
 
     # --- Text visibility checks ---
     print("\n--- Text Visibility Rules ---")
-    check('zIndex: 10' in code or 'zIndex:10' in code,
-          "Uses zIndex: 10 for text elements")
-    check('zIndex: 0' in code or 'zIndex:0' in code,
-          "Uses zIndex: 0 for decorative elements",
-          warn_only=True)
+    if uses_explicit_variants:
+        check(True, "Delegates zIndex handling to shared primitives")
+    else:
+        check('zIndex: 10' in code or 'zIndex:10' in code,
+              "Uses zIndex: 10 for text elements")
+        check('zIndex: 0' in code or 'zIndex:0' in code,
+              "Uses zIndex: 0 for decorative elements",
+              warn_only=True)
 
     # --- Zone-relative sizing ---
     print("\n--- Zone Usage ---")
     check('zone.width' in code, "Uses zone.width for sizing")
     check('zone.height' in code, "Uses zone.height for sizing")
-    check('zone.scale' in code, "Uses zone.scale for scaling")
+    check('zone.scale' in code or uses_explicit_variants,
+          "Uses zone.scale directly or shared node primitives for scaling")
+    node_variant_count = code.count('<TitleNode') + code.count('<MetricNode') + code.count('<SubtitleCardNode')
+    if node_variant_count >= 2:
+        check('assertSceneSpacing' in code,
+              "Uses scene-level spacing guard when rendering multiple nodes")
 
     # --- Clip ID format ---
     print("\n--- Clip ID Format ---")

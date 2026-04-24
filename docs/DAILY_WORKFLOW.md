@@ -9,15 +9,14 @@
 
 2. **Place the source video** (`.mp4`) in that folder.
 
-3. **Open Claude Code** in the project folder:
+3. **Open Codex** in the project folder:
    ```bash
    cd ~/Videos/broll-projects/MY-VIDEO-NAME
-   claude
    ```
 
 4. **Run the pipeline:**
    ```
-   /broll-pipeline MY-VIDEO-NAME.mp4
+   Use $broll-pipeline on MY-VIDEO-NAME.mp4
    ```
 
 ## What Happens
@@ -25,11 +24,11 @@
 The pipeline runs through these stages automatically:
 
 1. **Transcription** (if no transcript exists) — extracts audio, sends to AssemblyAI, saves JSON
-2. **Scout** — analyzes transcript, selects ~8 clips per 10 minutes, writes `broll_manifest.md`
-3. **Build** — spawns parallel builder agents, each generates 2-3 TypeScript components
+2. **Scout** — analyzes transcript, selects b-roll moments, writes `broll_manifest.md`
+3. **Build** — creates approved template calls and renders deterministic Remotion graphics
 4. **Validate** — runs TypeScript compiler, checks for errors
 5. **Register** — creates batch aggregator file, updates Root.tsx
-6. **QC** — takes screenshots at key frames, checks readability/sizing
+6. **QC** — takes screenshots at key frames and checks editorial strength
 7. **Render** — renders each clip sequentially (~10s per clip)
 8. **PAUSE** — asks for your approval before compositing
 9. **Composite** — layers clips onto video, applies YouTube/Substack chyrons
@@ -52,9 +51,11 @@ MY-VIDEO-NAME/
   MY-VIDEO-NAME_composite_SS.mp4  # Substack deliverable
 ```
 
-## Adding Clips to Root.tsx
+## Composition Registration
 
-After the pipeline builds components, you need to register them in Root.tsx so they can be rendered. The pipeline usually does this automatically, but if you need to do it manually:
+The pipeline should register generated clips automatically. The editor should not edit `Root.tsx` during normal operation.
+
+If Codex explicitly reports that registration failed, Jon or a technical operator can verify:
 
 1. Open `$BROLL_HOME/remotion/src/Root.tsx`
 2. Add the import: `import { XX_COMPS } from "./broll/XXBatch";`
@@ -62,18 +63,21 @@ After the pipeline builds components, you need to register them in Root.tsx so t
 
 ## Reviewing QC Screenshots
 
-The pipeline takes screenshots before rendering. They're saved to `$BROLL_HOME/remotion/out/`. Check that:
+The pipeline takes screenshots before rendering. They're saved to the project `qc/` folder or `$BROLL_HOME/remotion/out/`, depending on the stage. Check that:
 
-- All text is readable (40px minimum)
-- No more than 4 elements per frame
-- No overlapping elements
-- Real brand logos used (not generic icons)
+- The chosen template matches the spoken idea
+- The graphic communicates a real point, not just decoration
+- Text is readable in under two seconds
+- No text is clipped, cramped, or touching borders
+- `stack` and `comparison` do not use arrows
 
-If anything looks wrong, tell Claude Code what to fix before approving the render.
+If anything looks wrong, tell Codex what to fix before approving the render.
+
+Approved template guidance lives in [EDITOR_TRAINING_GUIDE.md](EDITOR_TRAINING_GUIDE.md).
 
 ## Tips
 
 - The pipeline takes 10-30 minutes depending on video length
 - Don't run two pipelines at the same time (Remotion renders conflict)
-- If a session crashes, re-run `/broll-pipeline` — it reads the manifest and resumes from where it stopped
+- If a session crashes, re-run `Use $broll-pipeline on MY-VIDEO-NAME.mp4` — it reads the manifest and resumes from where it stopped
 - You can preview individual clips in `broll/` before compositing

@@ -85,6 +85,12 @@ Derived from the dwell rule (1 second per 13 characters × ~7s of content time).
 5. **No competing message zones.** One frame = one message.
 6. **Connecting lines terminate at container EDGES**, not centers. A line passing through a labeled box is a QC failure. Compute the edge intersection point.
 7. **Radial layouts spread evenly.** Branches around a center distribute angles evenly across full 360° (or ≥270° if anchored). Never bunch on one side.
+8. **Geometry is part of the design, not a cleanup pass.** If a node has an icon, title, and subtitle, it must reserve distinct lanes for each. Do not vertically "center the stack" and hope it fits.
+9. **Icons may not touch or cross the card stroke.** If an icon needs to sit above the card, give it its own badge zone with visible separation.
+10. **Subtitles may not touch or cross the card stroke.** If the subtitle does not fit comfortably inside a large card, either enlarge the card or delete the subtitle.
+11. **Text or icons touching a border is a hard failure.** Not "slightly off." Not "good enough." Fail and rebuild.
+12. **Use explicit primitives.** `TitleNode` for title-only cards, `MetricNode` for stat/value cards, `SubtitleCardNode` for icon/title/subtitle cards. `DiagramNode` is retired and must not be used.
+13. **Assert scene spacing.** If a scene contains multiple nodes, use the spacing guard so stacked or diagonal collisions fail before QC.
 
 ### Z-discipline (mechanical, prevents overlap bugs)
 
@@ -963,8 +969,9 @@ Before outputting the file, verify EVERY item. The READABILITY items are in thei
 5. **Implement each render function** as a faithful realization of the design spec — no freestyle extras
 6. **Self-check** against the readability checklist (blocking) and mechanical checklist
 7. **Output the complete file** to the correct path
-8. **RENDER & VERIFY (MANDATORY):** Render a QC frame for each of your clips and visually verify the result matches the design spec before declaring done (see next section)
-9. **Report:** clip count, design specs summary, any rule trade-offs you had to make, and the paths to your QC frames
+8. **RENDER REQUIRED STILLS (MANDATORY):** Render QC frames for each clip at frames 150 and 270 before the clip can be considered built
+9. **VERIFY:** Visually verify the rendered stills match the design spec before declaring done
+10. **Report:** clip count, design specs summary, any rule trade-offs you had to make, and the paths to your QC frames
 
 ---
 
@@ -984,19 +991,33 @@ pnpm exec tsc --noEmit 2>&1 | grep -E "<YOUR_BATCH_FILENAME>" | head -20
 
 Replace `<YOUR_BATCH_FILENAME>` with your batch file (e.g., `FT_Clips03`). If there are ANY errors for your file, fix them and re-run tsc. Do not proceed to rendering until tsc is clean for your file.
 
-### Step 8.2: Render QC frames (one per clip)
+### Step 8.2: Render required QC frames
 
-For EACH of your 2-3 clips, render a still at frame 200 (mid-content, most elements visible):
+For EACH of your 2-3 clips, render stills at frames 150 and 270:
 
 ```bash
 cd $BROLL_HOME/remotion
 eval "$(/opt/homebrew/bin/brew shellenv)"
-pnpm exec remotion still src/index.ts "<CLIP_ID>" "out/qc-<CLIP_ID>-f200.png" --frame=200
+pnpm exec remotion still src/index.ts "<CLIP_ID>" "out/qc-<CLIP_ID>-f150.png" --frame=150
+pnpm exec remotion still src/index.ts "<CLIP_ID>" "out/qc-<CLIP_ID>-f270.png" --frame=270
 ```
 
-Example: `pnpm exec remotion still src/index.ts "FT-007-AllYourData" "out/qc-FT-007-AllYourData-f200.png" --frame=200`
+Example:
+
+```bash
+pnpm exec remotion still src/index.ts "FT-007-AllYourData" "out/qc-FT-007-AllYourData-f150.png" --frame=150
+pnpm exec remotion still src/index.ts "FT-007-AllYourData" "out/qc-FT-007-AllYourData-f270.png" --frame=270
+```
 
 **Important:** The composition ID must already be registered in `Root.tsx`. In a rebuild scenario the composition exists — the file you're writing just provides the component. You do NOT modify Root.tsx. If the clip ID isn't registered (fresh batch), the orchestrator will register it after your build.
+
+Then verify the still set exists:
+
+```bash
+python3 "$BROLL_HOME/scripts/verify_qc_stills.py" out <CLIP_ID_1> <CLIP_ID_2> ...
+```
+
+If that command fails, the clip is not built yet.
 
 ### Step 8.3: Read each PNG and judge it visually
 
@@ -1009,6 +1030,9 @@ Use the Read tool on each PNG. The rendered output is shown as an image. Look at
 5. **Meaning:** Does the frame communicate the concept? Or does it look like abstract shapes with no message?
 6. **One-glance test:** If you saw this frame for 1 second, would you understand the idea?
 7. **Phone test:** Imagine this on a phone screen at arm's length. Can you read every word?
+8. **Border test:** Is any icon, title, or subtitle touching or crossing a card/container border? If yes, fail it immediately.
+9. **Lane test:** Can you point to the icon zone, title zone, and subtitle zone without ambiguity? If those lanes collapse into each other, fail it.
+10. **Full-size test:** Judge the PNG at native size first. Contact sheets are only for pattern review after the full-size pass.
 
 ### Step 8.4: Iterate if needed
 
