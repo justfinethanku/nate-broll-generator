@@ -1,6 +1,6 @@
 ---
 name: broll-pipeline
-description: Strict Codex runbook for the Nate Jones Media b-roll pipeline. Use when the user wants to set up, run, resume, or troubleshoot transcript-driven b-roll generation, Remotion clip rendering, or final chyron compositing for a source video.
+description: Strict Codex runbook for the Nate Jones Media b-roll pipeline. Use when the user wants to set up, run, resume, or troubleshoot transcript-driven b-roll generation, Remotion clip rendering, final chyron compositing, delivery packaging, podcast/preview audio exports, or vertical short-video cutdowns for a source video.
 metadata:
   priority: 9
   promptSignals:
@@ -171,6 +171,18 @@ This is the strict execution order.
 4. Run `ffprobe` to capture resolution, FPS, and duration
 5. Derive the batch prefix from the video title or folder name
 
+AssemblyAI transcript requests must include the current speech model routing field:
+
+```json
+{
+  "audio_url": "<upload_url>",
+  "auto_chapters": true,
+  "speech_models": ["universal-3-pro", "universal-2"]
+}
+```
+
+Do not submit the legacy `audio_url` + `auto_chapters`-only payload; the API now rejects it.
+
 Output of this stage:
 
 - source video path
@@ -290,11 +302,225 @@ The job is not done until both deliverables exist:
 - `*_composite_YT.mp4`
 - `*_composite_SS.mp4`
 
-### Stage 9: Delivery Verification
+### Stage 9: Delivery Package, Audio Exports, And Shorts
+
+After the final composites exist, create a clean deliverables folder and a separate working folder in the video project directory:
+
+```bash
+<VIDEO_TITLE>_DELIVERABLES_<source_stem>/
+<VIDEO_TITLE>_WORKING_<source_stem>/
+```
+
+The deliverables folder must be safe to select-all and upload. It should contain only final handoff assets, not raw JSON, joined source media, EDL scratch files, QC snippets, or temp files.
+
+Use simple editor-facing filenames inside the deliverables folder:
+
+- `<title>_final_youtube.mp4`
+- `<title>_final_substack.mp4`
+- `<title>_podcast_full.mp3`
+- `<title>_preview_intro_<duration>s.mp3`
+- `shorts_raw_9x16_editorial/`
+- `<title>_transcript.md`
+- `<title>_youtube_description.md`
+- `<title>_podcast_description.md`
+- `README_MANIFEST.md`
+- `broll_manifest.md`
+- any useful QC contact sheets, if they exist
+
+Use the working folder for:
+
+- raw AssemblyAI transcript JSON
+- raw-source readable transcript
+- raw-source concat lists or joined raw source media
+- editorial EDL JSON/Markdown
+- QC stills/contact sheets
+- start/end audio snippets
+- any temporary render files
+
+Create a human-readable transcript Markdown file from the AssemblyAI transcript JSON:
+
+- Use the transcript `text` field as the primary source.
+- Format it as readable paragraphs, not one giant wall of text.
+- Include source video name, total duration, and generation date at the top.
+- If `chapters` are available, add a chapter/timestamp outline before the full transcript.
+- Preserve the words as spoken; do not rewrite the transcript into polished prose.
+- Save it as `<deliverables_dir>/<title>_transcript.md`.
+
+Create the full podcast MP3 from the final stitched source video audio unless the user explicitly asks for composite audio:
+
+```bash
+ffmpeg -y -i "<source_video>.mp4" \
+  -map 0:a:0 -vn -codec:a libmp3lame -b:a 192k \
+  "<deliverables_dir>/<title>_podcast_full.mp3"
+```
+
+Create a sub-60-second preview MP3 from the beginning. Choose a natural sentence or thought break from the transcript words; do not cut mid-phrase just to get closer to 60 seconds. Add a short fade out only if it improves the edit:
+
+```bash
+ffmpeg -y -i "<source_video>.mp4" \
+  -map 0:a:0 -vn -t <break_seconds> \
+  -af "afade=t=out:st=<fade_start>:d=0.30" \
+  -codec:a libmp3lame -b:a 192k \
+  "<deliverables_dir>/<title>_preview_intro_<duration>s.mp3"
+```
+
+Preferred preview selection workflow:
+
+1. Inspect the first 60 seconds of transcript words.
+2. Pick the strongest complete opener under 60 seconds.
+3. Prefer the first clean thesis/tease break over an arbitrary length target.
+4. Verify the exported preview duration is under 60 seconds.
+
+Create a YouTube description draft with Nate's current format:
+
+- Save it as `<deliverables_dir>/<title>_youtube_description.md`.
+- Start with one Substack link line when a post, playbook, skill pack, or interview URL is available:
+  `<link label>: https://natesnewsletter.substack.com/...`
+  Choose a concrete label such as `Full Post w/ ...`, `Full article w/ ...`, or `Exclusive Interview w/ ...`. If no URL is known, write `[SUBSTACK LINK TK]`.
+- Add a separator line of underscores: `__________________________________`.
+- Use this opening shape:
+  1. A question beginning `What's really happening...`
+  2. A contrast sentence: `The common story is that ... — but the reality is ...`
+  3. `In this video, I share the inside scoop on ...`
+  4. 3-5 scannable topic bullets or lines, preferably starting with `Why`, `How`, `What`, or `Where`.
+  5. One stakes paragraph naming who should care and what shift or action matters.
+- Then add `Chapters:` followed by timestamped chapter lines.
+  Use AssemblyAI `chapters` when available; if chapters are missing, infer draft chapter candidates from transcript structure and label the file as draft/review-needed.
+  Format timestamps as `MM:SS` or `HH:MM:SS`, zero-padded where natural; do not invent precision beyond what the transcript supports.
+- End with this footer:
+  `Subscribe for daily AI strategy and news.`
+  `For deeper playbooks and analysis: https://natesnewsletter.substack.com/`
+  blank line
+  `Listen to this video as a podcast.`
+  `Spotify: https://open.spotify.com/show/0gkFdjd...`
+  `Apple Podcasts: https://podcasts.apple.com/us/podcast...`
+- Keep the copy concrete and upload-facing. Do not use generic SEO filler, do not over-polish away Nate's framing, and do not call placeholder URLs final.
+
+Create a podcast description draft:
+
+- Save it as `<deliverables_dir>/<title>_podcast_description.md`.
+- Use the Acast-native version of the YouTube description, not a copy/paste of the YouTube upload text.
+- Do not include chapters by default.
+- Do not include `Listen to this video as a podcast.` in the podcast description.
+- Put the Substack CTA first because podcast descriptions should serve the subscriber/sales pipeline:
+  `For deeper playbooks and analysis: https://natesnewsletter.substack.com/`
+- Use this structure:
+  1. Substack CTA first line.
+  2. A `What's really happening...` opening question.
+  3. A `The common story is that ... — but the reality is ...` contrast.
+  4. `In this video, I share the inside scoop on ...`.
+  5. 3-5 key idea bullets or short lines, preferably starting with `Why`, `How`, `What`, or `Where`.
+  6. One stakes/so-what paragraph for operators, builders, marketers, executives, or the relevant audience.
+  7. `Subscribe for daily AI strategy and news.` when it fits the episode and current feed style.
+  8. Optional Spotify/Apple links only if the current feed format expects them; otherwise omit them because the listener is already in a podcast player.
+  9. Final line: `Hosted on Acast. See acast.com/privacy for more information.`
+- Keep paragraph spacing clean for podcast apps: short paragraphs, bullets separated enough to scan, no YouTube separators, no hashtags, no tags, no chapter list unless the user explicitly requests podcast chapters.
+- Treat the current podcast format as the source of truth when a newer reference is available.
+- Do not claim the podcast description is final unless it has been checked against the current publishing format.
+
+Create vertical short-video candidates from the original raw wide source media when that media folder is available. Do not use the b-roll composite for shorts unless the user explicitly asks. The social shorts are discovery/editing assets and should preserve the wider original framing for a full 9x16 punch-in.
+
+If the matching raw media folder contains one or more source clips:
+
+1. Sort them by filename/time order.
+2. Join them into a working source timeline for transcript discovery, or map EDL ranges back to the original files if needed.
+3. Generate a separate AssemblyAI transcript for the raw joined source.
+4. Use that raw transcript for shorts discovery, not the edited full-video transcript.
+5. Expect false starts, repeated takes, gaps, and unused material. The selector must make editorial decisions, not blindly cut every candidate span.
+
+If the raw media folder is unavailable, fall back to the clean stitched edited source video and note that limitation in the manifest.
+
+Selection rules:
+
+- Use the word-level transcript timestamps.
+- Hard cap the first-pass editorial shorts package at five clips unless the user explicitly asks for more.
+- Do not repeat the same idea across clips.
+- Do not reuse source transcript spans across clips.
+- Each clip must be under 2 minutes.
+- Each clip must be self-contained for a cold viewer.
+- Prefer complete thought units with a clear hook, context, and payoff.
+- Starts must not depend on dangling references like "this", "that", "as I said", "the thing", or "what we just talked about" unless the clip itself supplies that context.
+- Endings must resolve a complete thought; never end on a half-thought or obvious lead-in to missing context.
+- Cut on natural sentence/thought boundaries and use small boundary handles so first/last words are not clipped.
+- Stitched clips are allowed: combine multiple non-contiguous source ranges when that makes the short more self-contained or removes dead air, false starts, repeated takes, or long ramps before the point.
+- Skip weak or context-dependent moments even if they fill a quota.
+- Name files with a two-digit prefix and content slug: `01_clear_content_title.mp4`, `02_next_clip.mp4`, etc.
+
+For every selected short, create an editorial EDL record in the working folder before rendering:
+
+- number
+- output filename slug
+- readable title
+- one-sentence summary
+- hook sentence
+- payoff sentence
+- source ranges
+- why the clip is self-contained
+- QC notes after render
+
+Export the short clips in the raw-source editorial vertical format:
+
+- output canvas: `1080x1920`
+- source crop: centered full-height `9x16` punch-in from the raw `1920x1080` source, typically `crop=608:1080:(iw-608)/2:0,scale=1080:1920`
+- placement: full-frame vertical
+- padding: none
+- audio: original source audio preserved
+
+Example FFmpeg shape for a single continuous range:
+
+```bash
+ffmpeg -nostdin -y -i "<source_video>.mp4" \
+  -ss <start_seconds> -t <duration_seconds> \
+  -vf "crop=608:1080:(iw-608)/2:0,scale=1080:1920,setsar=1,format=yuv420p" \
+  -map 0:v:0 -map "0:a?" \
+  -c:v libx264 -preset veryfast -crf 18 \
+  -c:a aac -b:a 192k -movflags +faststart \
+  "<deliverables_dir>/shorts_raw_9x16_editorial/01_content_slug.mp4"
+```
+
+For stitched clips, use `trim`/`atrim` plus `concat` in `filter_complex` so source ranges combine into one output. Keep the EDL in the working folder.
+
+Shorts QC:
+
+- Verify every short is `1080x1920`, has audio, and is under 2 minutes.
+- Extract first and last 3 seconds of audio into the working folder and check for clipped words or half-thought endings.
+- Generate preview stills/contact sheet in the working folder, not the clean deliverables folder unless the user asks to include them.
+- If a start has dangling context or an ending feels unresolved, revise the EDL and rerender before finalizing.
+
+Create a human-readable `README_MANIFEST.md` in the deliverables folder. It must explain:
+
+- what is inside the delivery folder
+- what lives in the sibling working folder and should not be bulk-uploaded
+- final platform video filenames
+- full podcast MP3 filename and duration
+- preview MP3 filename, duration, and why that cut point was chosen
+- human-readable transcript filename
+- YouTube description filename, Substack link status, and chapter source
+- podcast description filename and whether it matched a confirmed current format or is a draft
+- short-video format and source
+- every generated short clip with number, filename, readable title, duration, source timestamp range(s), hook, payoff, self-contained note, and one-sentence summary
+
+### Stage 10: Delivery Verification
 
 Verify:
 
 - both final composites exist
+- the deliverables folder exists
+- the working folder exists
+- the deliverables folder contains only handoff/upload assets
+- raw JSON, joined raw source media, EDL scratch files, QC snippets, and temp files are not in the deliverables folder
+- both copied platform videos exist inside the deliverables folder
+- the human-readable transcript Markdown exists inside the deliverables folder
+- the YouTube description Markdown exists inside the deliverables folder and includes the Nate-format Substack/link placeholder, separator, common-story/reality framing, chapters or marked draft chapter candidates, and standard subscribe/podcast footer
+- the podcast description Markdown exists inside the deliverables folder and indicates whether the format is confirmed or draft
+- the full podcast MP3 exists and duration matches the source/final videos
+- the preview MP3 exists and is under 60 seconds
+- the editorial shorts folder exists
+- there are exactly five first-pass editorial shorts unless the user requested a different count
+- every editorial short is `1080x1920`, has audio, and is under 2 minutes
+- every editorial short has a working EDL entry with hook, payoff, source ranges, and self-contained note
+- no editorial short reuses source spans from another short
+- the human-readable `README_MANIFEST.md` exists and lists every deliverable
 - the `broll/` directory contains the clip set
 - `broll_manifest.md` reflects final state
 - file sizes and durations look sane
@@ -343,4 +569,17 @@ Do not jump straight to re-transcription or rebuilding everything unless the art
 - Never skip manifest state tracking.
 - Never skip QC before render.
 - Never composite before explicit user approval.
+- Never leave the final deliverables scattered when the user asks for a full delivery package.
+- Never mix working files into the clean deliverables folder.
+- Never cut the preview audio mid-thought when a natural break under 60 seconds is available.
+- Never create short-video cutdowns from the b-roll composite unless the user explicitly asks.
+- Never use padded vertical shorts when raw wide media is available; use full 9x16 raw-source punch-ins with no padding.
+- Never hardcode a large shorts count; first-pass editorial shorts are capped at five unless the user asks for more.
+- Never allow a short to depend on missing context, dangling references, clipped words, or half-thought endings.
+- Never reuse source spans across the five editorial shorts.
+- Never render editorial shorts without a working EDL that records hook, payoff, source ranges, and self-contained rationale.
+- Never omit the human-readable delivery manifest.
+- Never leave only raw transcript JSON in the final deliverables; include a readable Markdown transcript.
+- Never omit the YouTube description draft with Nate-format hook, chapters, and footer from a full delivery package.
+- Never call the podcast description final unless the current podcast format has been checked.
 - Never end the job early if the user asked for the full pipeline.
