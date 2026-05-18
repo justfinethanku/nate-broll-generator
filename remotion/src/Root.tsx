@@ -25,6 +25,7 @@ import { OP_COMPS } from "./broll/OPBatch";
 import { CD_COMPS } from "./broll/CDBatch";
 import { TW_COMPS } from "./broll/TWBatch";
 import { CC_COMPS } from "./broll/CCBatch";
+import { IP_COMPS } from "./broll/IPBatch";
 
 // ↓ Import new video batches here
 // import { XX_COMPS } from "./broll/XXBatch";
@@ -50,6 +51,7 @@ const BROLL_COMPS: ClipEntry[] = [
   ...CD_COMPS,
   ...TW_COMPS,
   ...CC_COMPS,
+  ...IP_COMPS,
   // ...XX_COMPS,  ← add new batches here (one line per video)
 ];
 

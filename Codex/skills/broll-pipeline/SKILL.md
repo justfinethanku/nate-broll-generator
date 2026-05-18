@@ -321,6 +321,7 @@ Use simple editor-facing filenames inside the deliverables folder:
 - `<title>_preview_intro_<duration>s.mp3`
 - `shorts_raw_9x16_editorial/`
 - `<title>_transcript.md`
+- `<title>_youtube_captions.srt`
 - `<title>_youtube_description.md`
 - `<title>_podcast_description.md`
 - `README_MANIFEST.md`
@@ -345,6 +346,15 @@ Create a human-readable transcript Markdown file from the AssemblyAI transcript 
 - If `chapters` are available, add a chapter/timestamp outline before the full transcript.
 - Preserve the words as spoken; do not rewrite the transcript into polished prose.
 - Save it as `<deliverables_dir>/<title>_transcript.md`.
+
+Create a YouTube-ready captions file from the completed AssemblyAI transcript:
+
+- Save it as `<deliverables_dir>/<title>_youtube_captions.srt`.
+- Use AssemblyAI's SRT subtitle export endpoint for the completed transcript ID; do not rely on YouTube auto-captions when an AssemblyAI transcript already exists.
+- Keep this YouTube-only for now. Do not add VTT, Resolve caption files, or custom caption CSVs unless the user asks.
+- Use plain UTF-8 SRT with no styling markup.
+- Prefer readable captions with a reasonable `chars_per_caption` value when the export endpoint supports it.
+- If the AssemblyAI SRT export fails, record the failure in `README_MANIFEST.md` and do not invent a hand-made captions file unless the user explicitly asks for a fallback.
 
 Create the full podcast MP3 from the final stitched source video audio unless the user explicitly asks for composite audio:
 
@@ -495,6 +505,7 @@ Create a human-readable `README_MANIFEST.md` in the deliverables folder. It must
 - full podcast MP3 filename and duration
 - preview MP3 filename, duration, and why that cut point was chosen
 - human-readable transcript filename
+- YouTube captions SRT filename and whether it came directly from AssemblyAI
 - YouTube description filename, Substack link status, and chapter source
 - podcast description filename and whether it matched a confirmed current format or is a draft
 - short-video format and source
@@ -511,6 +522,7 @@ Verify:
 - raw JSON, joined raw source media, EDL scratch files, QC snippets, and temp files are not in the deliverables folder
 - both copied platform videos exist inside the deliverables folder
 - the human-readable transcript Markdown exists inside the deliverables folder
+- the YouTube captions SRT exists inside the deliverables folder, is plain UTF-8, and came from AssemblyAI's completed transcript export
 - the YouTube description Markdown exists inside the deliverables folder and includes the Nate-format Substack/link placeholder, separator, common-story/reality framing, chapters or marked draft chapter candidates, and standard subscribe/podcast footer
 - the podcast description Markdown exists inside the deliverables folder and indicates whether the format is confirmed or draft
 - the full podcast MP3 exists and duration matches the source/final videos
@@ -580,6 +592,7 @@ Do not jump straight to re-transcription or rebuilding everything unless the art
 - Never render editorial shorts without a working EDL that records hook, payoff, source ranges, and self-contained rationale.
 - Never omit the human-readable delivery manifest.
 - Never leave only raw transcript JSON in the final deliverables; include a readable Markdown transcript.
+- Never rely on YouTube auto-captions when an AssemblyAI transcript is already available; include the YouTube-ready SRT caption file.
 - Never omit the YouTube description draft with Nate-format hook, chapters, and footer from a full delivery package.
 - Never call the podcast description final unless the current podcast format has been checked.
 - Never end the job early if the user asked for the full pipeline.

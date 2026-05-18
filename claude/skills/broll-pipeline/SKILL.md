@@ -65,8 +65,10 @@ If the transcript doesn't exist, run transcription:
    curl -s -X POST "https://api.assemblyai.com/v2/transcript" \
      -H "authorization: $ASSEMBLYAI_API_KEY" \
      -H "content-type: application/json" \
-     -d '{"audio_url": "<upload_url>", "auto_chapters": true}'
+     -d '{"audio_url": "<upload_url>", "auto_chapters": true, "speech_models": ["universal-3-pro", "universal-2"]}'
    ```
+
+   Do not submit the old `audio_url` + `auto_chapters`-only payload; AssemblyAI now requires `speech_models`.
 
 4. **Poll for completion:**
    ```bash

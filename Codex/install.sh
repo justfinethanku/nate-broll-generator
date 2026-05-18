@@ -1,6 +1,6 @@
 #!/bin/bash
 # Install Codex configuration for the b-roll pipeline.
-# Copies skill + prompt definitions to ~/.codex/ and sets BROLL_HOME.
+# Copies skills + prompt definitions to ~/.codex/ and sets BROLL_HOME.
 #
 # Usage: ./install.sh [BROLL_HOME_PATH]
 #   If BROLL_HOME_PATH is omitted, uses the parent directory of this script.
@@ -73,12 +73,13 @@ echo "Installing Codex b-roll configuration..."
 echo "  BROLL_HOME = $BROLL_HOME"
 echo "  CODEX_HOME = $CODEX_HOME"
 
-mkdir -p "$CODEX_HOME/skills/broll-pipeline"
+mkdir -p "$CODEX_HOME/skills"
 mkdir -p "$CODEX_HOME/agents"
 mkdir -p "$SHELL_DIR"
 
 for f in \
   "$CODEX_HOME/skills/broll-pipeline/SKILL.md" \
+  "$CODEX_HOME/skills/radio-edit/SKILL.md" \
   "$CODEX_HOME/agents/broll-scout.md" \
   "$CODEX_HOME/agents/broll-builder.md"; do
   if [ -f "$f" ]; then
@@ -87,11 +88,18 @@ for f in \
   fi
 done
 
-cp "$SCRIPT_DIR/skills/broll-pipeline/SKILL.md" "$CODEX_HOME/skills/broll-pipeline/SKILL.md"
+for skill_dir in "$SCRIPT_DIR"/skills/*; do
+  if [ -d "$skill_dir" ] && [ -f "$skill_dir/SKILL.md" ]; then
+    skill_name="$(basename "$skill_dir")"
+    mkdir -p "$CODEX_HOME/skills/$skill_name"
+    cp -R "$skill_dir"/. "$CODEX_HOME/skills/$skill_name/"
+    echo "  Installed: $CODEX_HOME/skills/$skill_name/SKILL.md"
+  fi
+done
+
 cp "$SCRIPT_DIR/agents/broll-scout.md" "$CODEX_HOME/agents/broll-scout.md"
 cp "$SCRIPT_DIR/agents/broll-builder.md" "$CODEX_HOME/agents/broll-builder.md"
 
-echo "  Installed: $CODEX_HOME/skills/broll-pipeline/SKILL.md"
 echo "  Installed: $CODEX_HOME/agents/broll-scout.md"
 echo "  Installed: $CODEX_HOME/agents/broll-builder.md"
 
@@ -124,5 +132,5 @@ for profile_file in "$ZPROFILE_FILE" "$ZSHRC_FILE"; do
 done
 
 echo ""
-echo "Done! Codex will now have access to the b-roll pipeline skill."
+echo "Done! Codex will now have access to the b-roll pipeline skills."
 echo "Open a new shell (or run: source ~/.zprofile && source ~/.zshrc) before using BROLL_HOME in Terminal."

@@ -1,0 +1,1361 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nate Jones Media Production Pipeline Briefing</title>
+  <style>
+    :root {
+      --paper: #f7f0df;
+      --paper-2: #efe2c5;
+      --ink: #201d19;
+      --muted: #6f675b;
+      --rule: #2f2a22;
+      --oxide: #b54831;
+      --clay: #d16d45;
+      --olive: #6e7d47;
+      --amber: #f2b84b;
+      --cyan: #19a7b8;
+      --green: #5d9f5b;
+      --white: #fffaf0;
+      --shadow: 0 18px 45px rgba(32, 29, 25, 0.14);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(32, 29, 25, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32, 29, 25, 0.035) 1px, transparent 1px),
+        var(--paper);
+      background-size: 34px 34px;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    .page {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 28px 22px 64px;
+    }
+
+    .hero {
+      min-height: 76vh;
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr);
+      gap: 28px;
+      align-items: center;
+      padding: 18px 0 36px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 6px 10px;
+      border: 1.5px solid var(--rule);
+      border-radius: 999px;
+      background: var(--amber);
+      box-shadow: 4px 4px 0 var(--rule);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    h1 {
+      margin: 22px 0 16px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(46px, 8vw, 92px);
+      line-height: 0.92;
+      letter-spacing: 0;
+      max-width: 760px;
+    }
+
+    .lead {
+      max-width: 680px;
+      font-size: clamp(18px, 2vw, 23px);
+      color: #332e27;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .briefing-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .briefing-card {
+      min-height: 126px;
+      padding: 14px;
+      border: 1.5px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--white);
+      box-shadow: 5px 5px 0 rgba(32, 29, 25, 0.14);
+    }
+
+    .briefing-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
+
+    .briefing-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 10px 14px;
+      border: 1.5px solid var(--rule);
+      border-radius: 6px;
+      color: var(--ink);
+      background: var(--white);
+      box-shadow: 3px 3px 0 var(--rule);
+      font-weight: 800;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      background: var(--cyan);
+      color: #081719;
+    }
+
+    .btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--rule);
+    }
+
+    .hero-board {
+      border: 2px solid var(--rule);
+      border-radius: var(--radius);
+      background: rgba(255, 250, 240, 0.78);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .board-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      border-bottom: 2px solid var(--rule);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+
+    .board-title h2,
+    .section-title h2,
+    .lane h3,
+    .small-panel h3 {
+      margin: 0;
+      letter-spacing: 0;
+    }
+
+    .board-title h2 {
+      font-size: 20px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      padding: 4px 8px;
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+      background: var(--paper-2);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .system-map {
+      display: grid;
+      gap: 12px;
+    }
+
+    .map-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .node {
+      min-height: 88px;
+      padding: 12px;
+      border: 1.5px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--white);
+      position: relative;
+    }
+
+    .node strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 15px;
+    }
+
+    .node span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .node.radio { border-top: 8px solid var(--oxide); }
+    .node.editor { border-top: 8px solid var(--amber); }
+    .node.broll { border-top: 8px solid var(--cyan); }
+    .node.delivery { border-top: 8px solid var(--green); }
+
+    .arrow {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      color: var(--rule);
+      font-weight: 900;
+      font-size: 24px;
+    }
+
+    .section {
+      margin-top: 44px;
+      padding-top: 18px;
+      border-top: 2px solid var(--rule);
+    }
+
+    .section-title {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .section-num {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border: 1.5px solid var(--rule);
+      border-radius: 50%;
+      background: var(--oxide);
+      color: var(--white);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 23px;
+      font-weight: 900;
+      box-shadow: 3px 3px 0 var(--rule);
+    }
+
+    .section-title p {
+      margin: 6px 0 0;
+      max-width: 840px;
+      color: var(--muted);
+    }
+
+    .lanes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .lane {
+      border: 2px solid var(--rule);
+      border-radius: var(--radius);
+      background: rgba(255, 250, 240, 0.82);
+      box-shadow: 8px 8px 0 rgba(32, 29, 25, 0.11);
+      overflow: hidden;
+    }
+
+    .lane-head {
+      padding: 16px;
+      border-bottom: 2px solid var(--rule);
+    }
+
+    .lane.radio .lane-head { background: #f0c1a9; }
+    .lane.broll .lane-head { background: #bce9ec; }
+
+    .lane-head p {
+      margin: 6px 0 0;
+      color: #3e372f;
+    }
+
+    .steps {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .steps li {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(47, 42, 34, 0.25);
+    }
+
+    .steps li:last-child {
+      border-bottom: 0;
+    }
+
+    .step-num {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border: 1px solid var(--rule);
+      border-radius: 50%;
+      background: var(--paper-2);
+      font-weight: 900;
+      font-size: 13px;
+    }
+
+    .step-copy strong {
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .step-copy span {
+      display: block;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .callout {
+      margin-top: 18px;
+      padding: 15px 16px;
+      border: 2px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--amber);
+      box-shadow: 5px 5px 0 var(--rule);
+      font-weight: 800;
+    }
+
+    .loop {
+      display: grid;
+      gap: 10px;
+    }
+
+    .loop-row {
+      display: grid;
+      grid-template-columns: 86px repeat(5, minmax(120px, 1fr));
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .loop-label,
+    .task {
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 9px;
+      min-height: 54px;
+      background: var(--white);
+      font-size: 13px;
+    }
+
+    .loop-label {
+      background: var(--rule);
+      color: var(--white);
+      font-weight: 900;
+      display: grid;
+      place-items: center;
+      text-align: center;
+    }
+
+    .task {
+      color: #3b352d;
+    }
+
+    .task.radio { border-top: 6px solid var(--oxide); }
+    .task.edit { border-top: 6px solid var(--amber); }
+    .task.broll { border-top: 6px solid var(--cyan); }
+    .task.review { border-top: 6px solid var(--olive); }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      gap: 7px;
+      align-items: center;
+      padding: 6px 9px;
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+      background: var(--white);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border: 1px solid var(--rule);
+      border-radius: 50%;
+    }
+
+    .dot.radio { background: var(--oxide); }
+    .dot.edit { background: var(--amber); }
+    .dot.broll { background: var(--cyan); }
+    .dot.review { background: var(--olive); }
+
+    .deliverables {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .deliverable {
+      min-height: 118px;
+      padding: 14px;
+      border: 1.5px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--white);
+    }
+
+    .deliverable .icon {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 10px;
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      background: var(--paper-2);
+      font-weight: 900;
+    }
+
+    .deliverable strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .deliverable span {
+      display: block;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .audience-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .audience-card {
+      border: 2px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--white);
+      overflow: hidden;
+    }
+
+    .audience-head {
+      padding: 14px 16px;
+      border-bottom: 2px solid var(--rule);
+      background: var(--paper-2);
+    }
+
+    .audience-head h3 {
+      margin: 0;
+    }
+
+    .audience-card ul {
+      margin: 0;
+      padding: 14px 18px 18px 34px;
+      color: var(--muted);
+    }
+
+    .audience-card li + li {
+      margin-top: 9px;
+    }
+
+    .gate-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .gate {
+      min-height: 132px;
+      padding: 13px;
+      border: 1.5px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--white);
+      position: relative;
+    }
+
+    .gate::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 8px;
+      background: var(--oxide);
+      border-right: 1.5px solid var(--rule);
+    }
+
+    .gate.editor::before { background: var(--amber); }
+    .gate.broll::before { background: var(--cyan); }
+    .gate.delivery::before { background: var(--green); }
+
+    .gate strong,
+    .gate span {
+      display: block;
+      margin-left: 10px;
+    }
+
+    .gate strong {
+      margin-bottom: 6px;
+    }
+
+    .gate span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .before-after {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .mode-card {
+      border: 2px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--white);
+      overflow: hidden;
+    }
+
+    .mode-head {
+      padding: 12px 14px;
+      border-bottom: 2px solid var(--rule);
+      background: var(--paper-2);
+      font-weight: 900;
+    }
+
+    .mode-card.old .mode-head { background: #f0c1a9; }
+    .mode-card.new .mode-head { background: #bce9ec; }
+
+    .mode-body {
+      padding: 14px;
+      color: var(--muted);
+    }
+
+    .mini-flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .mini-pill {
+      padding: 7px 9px;
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+      background: var(--paper);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .assembly {
+      border: 2px solid var(--rule);
+      border-radius: var(--radius);
+      background: rgba(255, 250, 240, 0.86);
+      box-shadow: 8px 8px 0 rgba(32, 29, 25, 0.11);
+      overflow-x: auto;
+      padding: 14px;
+    }
+
+    .assembly-track {
+      min-width: 980px;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .station {
+      min-height: 250px;
+      border: 1.5px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--white);
+      overflow: hidden;
+    }
+
+    .station-head {
+      min-height: 66px;
+      padding: 10px;
+      border-bottom: 1.5px solid var(--rule);
+      background: var(--paper-2);
+    }
+
+    .station-head strong,
+    .station-head span {
+      display: block;
+    }
+
+    .station-head strong {
+      font-size: 14px;
+    }
+
+    .station-head span {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .video-card {
+      margin: 10px;
+      padding: 10px;
+      min-height: 72px;
+      border: 1.5px solid var(--rule);
+      border-radius: 6px;
+      background: var(--amber);
+      box-shadow: 3px 3px 0 rgba(32, 29, 25, 0.24);
+      font-weight: 900;
+    }
+
+    .video-card span {
+      display: block;
+      margin-top: 4px;
+      color: #3b352d;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .video-card.v1 { background: #b9d9a6; }
+    .video-card.v2 { background: #bce9ec; }
+    .video-card.v3 { background: #f2d07d; }
+    .video-card.v4 { background: #f0c1a9; }
+    .video-card.v5 { background: #efe2c5; }
+
+    .assembly-caption {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .decision-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 2px solid var(--rule);
+      background: var(--white);
+    }
+
+    .decision-table th,
+    .decision-table td {
+      padding: 12px;
+      border: 1px solid rgba(47, 42, 34, 0.35);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .decision-table th {
+      background: var(--paper-2);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .decision-table td {
+      color: var(--muted);
+    }
+
+    .decision-table strong {
+      color: var(--ink);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 0.72fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .small-panel {
+      padding: 16px;
+      border: 2px solid var(--rule);
+      border-radius: var(--radius);
+      background: rgba(255, 250, 240, 0.86);
+    }
+
+    .small-panel p {
+      color: var(--muted);
+      margin: 8px 0 0;
+    }
+
+    .folder {
+      margin-top: 14px;
+      border: 1.5px solid var(--rule);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--white);
+    }
+
+    .folder-head {
+      padding: 10px 12px;
+      border-bottom: 1.5px solid var(--rule);
+      background: var(--paper-2);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .folder ul {
+      margin: 0;
+      padding: 10px 12px 12px 28px;
+      color: var(--muted);
+    }
+
+    .folder li + li {
+      margin-top: 5px;
+    }
+
+    .copy-block {
+      display: grid;
+      gap: 12px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 310px;
+      padding: 14px;
+      resize: vertical;
+      border: 2px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--white);
+      color: var(--ink);
+      box-shadow: inset 0 0 0 4px rgba(242, 184, 75, 0.12);
+    }
+
+    .status {
+      min-height: 22px;
+      color: var(--olive);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .note {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-left: 6px solid var(--oxide);
+      background: rgba(255, 250, 240, 0.78);
+      color: #3d352c;
+    }
+
+    .footer {
+      margin-top: 48px;
+      padding-top: 18px;
+      border-top: 2px solid var(--rule);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 940px) {
+      .hero,
+      .lanes,
+      .split {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        min-height: auto;
+      }
+
+      .deliverables {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .briefing-strip,
+      .audience-grid,
+      .gate-grid,
+      .before-after {
+        grid-template-columns: 1fr;
+      }
+
+      .loop {
+        overflow-x: auto;
+        padding-bottom: 6px;
+      }
+
+      .loop-row {
+        min-width: 850px;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .page {
+        padding: 18px 14px 48px;
+      }
+
+      .map-row {
+        grid-template-columns: 1fr;
+      }
+
+      .arrow {
+        width: auto;
+        height: 20px;
+        transform: rotate(90deg);
+      }
+
+      .deliverables {
+        grid-template-columns: 1fr;
+      }
+
+      .section-title {
+        grid-template-columns: 1fr;
+      }
+
+      .board-title {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero" id="top">
+      <div>
+        <div class="eyebrow">Briefing for Adrienne + editor</div>
+        <h1>Nate Jones Media production pipeline.</h1>
+        <p class="lead">
+          A practical briefing for how the new radio edit and b-roll automation work together, what the editor still owns, and how the workflow saves more time as multiple videos move through the system.
+        </p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#briefing">Start with the briefing</a>
+          <a class="btn" href="#loop">See the compounding workflow</a>
+          <a class="btn" href="#deliverables">Review deliverables</a>
+          <button class="btn" type="button" data-copy-target="brief">Copy briefing summary</button>
+        </div>
+        <div class="briefing-strip" aria-label="Briefing highlights">
+          <div class="briefing-card">
+            <strong>What changed</strong>
+            <span>The pipeline now covers rough edit prep, b-roll, shorts, audio exports, transcripts, descriptions, and delivery packaging.</span>
+          </div>
+          <div class="briefing-card">
+            <strong>What stays human</strong>
+            <span>The editor still reviews the XML, fixes pacing, approves b-roll, and confirms the final package.</span>
+          </div>
+          <div class="briefing-card">
+            <strong>Why it matters</strong>
+            <span>One editor can move several videos through prep, review, export, and packaging without waiting on each full step manually.</span>
+          </div>
+        </div>
+      </div>
+
+      <aside class="hero-board" aria-label="Pipeline map">
+        <div class="board-title">
+          <h2>Briefing Map</h2>
+          <span class="badge">raw media → clean delivery</span>
+        </div>
+        <div class="system-map">
+          <div class="map-row">
+            <div class="node radio">
+              <strong>Radio Edit Pipeline</strong>
+              <span>Raw media becomes a transcript-driven XML rough cut.</span>
+            </div>
+            <div class="arrow">→</div>
+            <div class="node editor">
+              <strong>Editor Review</strong>
+              <span>The editor imports the XML, makes judgment calls, and exports a clean edit.</span>
+            </div>
+          </div>
+          <div class="map-row">
+            <div class="node broll">
+              <strong>B-roll Pipeline</strong>
+              <span>The clean edit gets motion graphics, chyrons, audio exports, and transcript assets.</span>
+            </div>
+            <div class="arrow">→</div>
+            <div class="node delivery">
+              <strong>Delivery Package</strong>
+              <span>Everything lands in one clean folder that is safe to select and upload.</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="section" id="briefing">
+      <div class="section-title">
+        <div class="section-num">0</div>
+        <div>
+          <h2>Executive Brief</h2>
+          <p>This is the plain-language version to anchor the conversation before getting into the operational details.</p>
+        </div>
+      </div>
+
+      <div class="audience-grid">
+        <article class="audience-card">
+          <div class="audience-head">
+            <h3>For Adrienne</h3>
+          </div>
+          <ul>
+            <li><strong>Core value:</strong> this turns a one-video-at-a-time editing process into a staggered production system.</li>
+            <li><strong>Capacity gain:</strong> the biggest savings show up when one editor runs two or more videos through the system in a batch.</li>
+            <li><strong>Quality control:</strong> human review stays in the important places: radio edit cleanup, b-roll approval, and final upload package review.</li>
+            <li><strong>Business impact:</strong> each clean export can produce the main platform videos plus podcast audio, preview audio, shorts, transcript, manifest, and description drafts.</li>
+          </ul>
+        </article>
+
+        <article class="audience-card">
+          <div class="audience-head">
+            <h3>For the Editor</h3>
+          </div>
+          <ul>
+            <li><strong>Start point:</strong> run the radio edit pipeline on raw source media and import the generated XML into the NLE.</li>
+            <li><strong>Editor pass:</strong> treat the XML as a strong rough cut, not a final edit. Tighten pacing, fix taste issues, and export the clean edit.</li>
+            <li><strong>B-roll pass:</strong> run the b-roll pipeline on the clean export, review the generated b-roll, then approve final compositing.</li>
+            <li><strong>Delivery pass:</strong> use the clean deliverables folder for upload. Leave working files alone unless troubleshooting is needed.</li>
+          </ul>
+        </article>
+      </div>
+
+      <div class="callout">
+        The system does not replace editorial judgment. It removes repetitive prep and packaging work so the editor can focus on the decisions that actually need taste.
+      </div>
+    </section>
+
+    <section class="section" id="pipelines">
+      <div class="section-title">
+        <div class="section-num">1</div>
+        <div>
+          <h2>What Each Pipeline Does</h2>
+          <p>The editor is still the editor. The automation removes repetitive prep, assembly, rendering, packaging, and documentation work.</p>
+        </div>
+      </div>
+
+      <div class="lanes">
+        <article class="lane radio">
+          <div class="lane-head">
+            <h3>Radio Edit Process</h3>
+            <p>Raw footage to editable rough timeline.</p>
+          </div>
+          <ol class="steps">
+            <li>
+              <div class="step-num">1</div>
+              <div class="step-copy"><strong>Create word-level transcript</strong><span>AssemblyAI gives every spoken word a timestamp.</span></div>
+            </li>
+            <li>
+              <div class="step-num">2</div>
+              <div class="step-copy"><strong>Find the clean spoken story</strong><span>False starts, repeated takes, abandoned fragments, and rough phrasing are filtered out.</span></div>
+            </li>
+            <li>
+              <div class="step-num">3</div>
+              <div class="step-copy"><strong>Create cut decisions</strong><span>The system builds a keep list and supporting audit files.</span></div>
+            </li>
+            <li>
+              <div class="step-num">4</div>
+              <div class="step-copy"><strong>Output XML timeline</strong><span>The editor imports the XML into the NLE and starts from an assembled rough cut.</span></div>
+            </li>
+            <li>
+              <div class="step-num">5</div>
+              <div class="step-copy"><strong>Editor fine-tunes</strong><span>The human pass handles pacing, judgment, taste, and final clean export.</span></div>
+            </li>
+          </ol>
+        </article>
+
+        <article class="lane broll">
+          <div class="lane-head">
+            <h3>B-roll + Deliverables Process</h3>
+            <p>Clean edit to upload-ready package.</p>
+          </div>
+          <ol class="steps">
+            <li>
+              <div class="step-num">1</div>
+              <div class="step-copy"><strong>Analyze clean edit</strong><span>Create or reuse transcript, identify b-roll moments, and build a manifest.</span></div>
+            </li>
+            <li>
+              <div class="step-num">2</div>
+              <div class="step-copy"><strong>Generate b-roll clips</strong><span>Motion graphics are rendered from approved templates, then reviewed before final composite.</span></div>
+            </li>
+            <li>
+              <div class="step-num">3</div>
+              <div class="step-copy"><strong>Composite final videos</strong><span>Create YouTube and Substack versions with the correct chyrons.</span></div>
+            </li>
+            <li>
+              <div class="step-num">4</div>
+              <div class="step-copy"><strong>Create derived assets</strong><span>Podcast MP3, preview MP3, transcript, shorts, manifests, and descriptions.</span></div>
+            </li>
+            <li>
+              <div class="step-num">5</div>
+              <div class="step-copy"><strong>Package cleanly</strong><span>Final assets go in a deliverables folder; work files stay separate.</span></div>
+            </li>
+          </ol>
+        </article>
+      </div>
+
+      <div class="callout">
+        The promise is not “push one button and remove the editor.” The promise is “give one editor a strong assembly line so they spend more time on judgment and less time on repetitive setup.”
+      </div>
+    </section>
+
+    <section class="section" id="review-gates">
+      <div class="section-title">
+        <div class="section-num">2</div>
+        <div>
+          <h2>Human Review Gates</h2>
+          <p>These are the moments where the editor or producer should actively check the work instead of letting the machine run unattended.</p>
+        </div>
+      </div>
+
+      <div class="gate-grid">
+        <div class="gate">
+          <strong>1. XML Review</strong>
+          <span>Import the radio edit timeline and confirm the spoken story, pacing, and cut choices.</span>
+        </div>
+        <div class="gate editor">
+          <strong>2. Clean Export Check</strong>
+          <span>Confirm the clean edit is the right source for b-roll, podcast audio, and descriptions.</span>
+        </div>
+        <div class="gate broll">
+          <strong>3. B-roll Approval</strong>
+          <span>Review rendered b-roll clips before final compositing. Revise weak or unclear moments here.</span>
+        </div>
+        <div class="gate delivery">
+          <strong>4. Delivery Review</strong>
+          <span>Check that the final folder contains only upload-ready files and that descriptions match the current publishing format.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="loop">
+      <div class="section-title">
+        <div class="section-num">3</div>
+        <div>
+          <h2>The Production Line View</h2>
+          <p>This is the simplest way to understand the change: videos move through stations instead of one video consuming the editor from start to finish.</p>
+        </div>
+      </div>
+
+      <div class="before-after">
+        <article class="mode-card old">
+          <div class="mode-head">Old way: one complete video at a time</div>
+          <div class="mode-body">
+            Finish video 1 completely before video 2 gets meaningful attention.
+            <div class="mini-flow" aria-label="Old workflow">
+              <span class="mini-pill">Video 1 edit</span>
+              <span class="mini-pill">Video 1 b-roll</span>
+              <span class="mini-pill">Video 1 upload</span>
+              <span class="mini-pill">Then video 2</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="mode-card new">
+          <div class="mode-head">New way: staggered production line</div>
+          <div class="mode-body">
+            Several videos are in motion at once, but each one is only at one station.
+            <div class="mini-flow" aria-label="New workflow">
+              <span class="mini-pill">Prep batch</span>
+              <span class="mini-pill">Review XML</span>
+              <span class="mini-pill">Export clean</span>
+              <span class="mini-pill">Approve b-roll</span>
+              <span class="mini-pill">Package</span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="assembly" aria-label="Five videos moving through production stations">
+        <div class="assembly-track">
+          <div class="station">
+            <div class="station-head">
+              <strong>Raw Media</strong>
+              <span>Source footage is ready.</span>
+            </div>
+          </div>
+          <div class="station">
+            <div class="station-head">
+              <strong>Radio Edit XML</strong>
+              <span>Automation prepares rough timeline.</span>
+            </div>
+            <div class="video-card v5">Video 5<span>Machine prep</span></div>
+          </div>
+          <div class="station">
+            <div class="station-head">
+              <strong>Editor Review</strong>
+              <span>Human pass in the NLE.</span>
+            </div>
+            <div class="video-card v4">Video 4<span>Editor judgment</span></div>
+          </div>
+          <div class="station">
+            <div class="station-head">
+              <strong>Clean Export</strong>
+              <span>Approved edit becomes source.</span>
+            </div>
+            <div class="video-card v3">Video 3<span>Ready for b-roll</span></div>
+          </div>
+          <div class="station">
+            <div class="station-head">
+              <strong>B-roll Review</strong>
+              <span>Generated graphics get approved.</span>
+            </div>
+            <div class="video-card v2">Video 2<span>Review gate</span></div>
+          </div>
+          <div class="station">
+            <div class="station-head">
+              <strong>Deliverables</strong>
+              <span>Upload-ready folder.</span>
+            </div>
+            <div class="video-card v1">Video 1<span>Final package</span></div>
+          </div>
+        </div>
+        <div class="assembly-caption">
+          The editor is not doing five jobs at once. The system keeps five videos moving through different stations while the editor focuses on the human review points.
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="schedule">
+      <div class="section-title">
+        <div class="section-num">4</div>
+        <div>
+          <h2>Why The Time Savings Compound</h2>
+          <p>With one video, the workflow saves setup time. With several videos, the editor can rotate between automated processing, timeline review, clean exports, and b-roll approval.</p>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span class="legend-item"><span class="dot radio"></span> Radio edit automation</span>
+        <span class="legend-item"><span class="dot edit"></span> Editor in NLE</span>
+        <span class="legend-item"><span class="dot broll"></span> B-roll automation</span>
+        <span class="legend-item"><span class="dot review"></span> Human review gate</span>
+      </div>
+
+      <div class="loop" aria-label="Five video staggered workflow">
+        <div class="loop-row">
+          <div class="loop-label">Batch Start</div>
+          <div class="task radio">Start radio edit for video 1</div>
+          <div class="task radio">Start radio edit for video 2</div>
+          <div class="task radio">Start radio edit for video 3</div>
+          <div class="task radio">Start radio edit for video 4</div>
+          <div class="task radio">Start radio edit for video 5</div>
+        </div>
+        <div class="loop-row">
+          <div class="loop-label">Pass 1</div>
+          <div class="task edit">Open video 1 XML, fine-tune, export clean edit</div>
+          <div class="task broll">Start video 1 b-roll</div>
+          <div class="task edit">Open video 2 XML, fine-tune, export clean edit</div>
+          <div class="task review">Review video 1 b-roll</div>
+          <div class="task broll">Start video 2 b-roll</div>
+        </div>
+        <div class="loop-row">
+          <div class="loop-label">Pass 2</div>
+          <div class="task edit">Open video 3 XML, fine-tune, export clean edit</div>
+          <div class="task review">Review video 2 b-roll</div>
+          <div class="task broll">Start video 3 b-roll</div>
+          <div class="task edit">Open video 4 XML, fine-tune, export clean edit</div>
+          <div class="task review">Review video 3 b-roll</div>
+        </div>
+        <div class="loop-row">
+          <div class="loop-label">Pass 3</div>
+          <div class="task broll">Start video 4 b-roll</div>
+          <div class="task edit">Open video 5 XML, fine-tune, export clean edit</div>
+          <div class="task review">Review video 4 b-roll</div>
+          <div class="task broll">Start video 5 b-roll</div>
+          <div class="task review">Review video 5 b-roll and finalize package</div>
+        </div>
+      </div>
+
+      <div class="note">
+        Practical rule: radio edit prep can run in parallel. B-roll rendering should be staggered on one machine because the render stack uses browser/Remotion resources that can conflict when parallelized.
+      </div>
+    </section>
+
+    <section class="section" id="deliverables">
+      <div class="section-title">
+        <div class="section-num">5</div>
+        <div>
+          <h2>What The Editor Gets Back</h2>
+          <p>The final folder is designed for clean handoff: no scratch files, no raw JSON, no confusing “which one do I upload?” problem.</p>
+        </div>
+      </div>
+
+      <div class="deliverables">
+        <div class="deliverable"><div class="icon">YT</div><strong>Final YouTube Video</strong><span>Composite video with YouTube chyron and b-roll.</span></div>
+        <div class="deliverable"><div class="icon">SS</div><strong>Final Substack Video</strong><span>Composite video with Substack chyron and b-roll.</span></div>
+        <div class="deliverable"><div class="icon">5</div><strong>Vertical Shorts</strong><span>Five first-pass 9x16 shorts from raw wide source when available.</span></div>
+        <div class="deliverable"><div class="icon">MP3</div><strong>Full Podcast Audio</strong><span>Clean full-length MP3 for podcast publishing.</span></div>
+        <div class="deliverable"><div class="icon">60</div><strong>Preview MP3</strong><span>Sub-1-minute intro cut at a natural break.</span></div>
+        <div class="deliverable"><div class="icon">TXT</div><strong>Readable Transcript</strong><span>Human-readable transcript, with chapters when available.</span></div>
+        <div class="deliverable"><div class="icon">MD</div><strong>Delivery Manifest</strong><span>Explains every file in the folder and what it is for.</span></div>
+        <div class="deliverable"><div class="icon">CH</div><strong>YouTube Description</strong><span>Description draft with chapters and upload context.</span></div>
+        <div class="deliverable"><div class="icon">POD</div><strong>Podcast Description</strong><span>Draft description; format to be finalized against the current publishing style.</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="handoff">
+      <div class="section-title">
+        <div class="section-num">6</div>
+        <div>
+          <h2>Handoff Shape</h2>
+          <p>The folder structure matters because it keeps finished assets separate from machine work.</p>
+        </div>
+      </div>
+
+      <div class="split">
+        <div class="small-panel">
+          <h3>Clean Deliverables Folder</h3>
+          <p>This is the folder an editor or producer can select and upload without sorting through internals.</p>
+          <div class="folder">
+            <div class="folder-head">VIDEO_TITLE_DELIVERABLES/</div>
+            <ul>
+              <li>final_youtube.mp4</li>
+              <li>final_substack.mp4</li>
+              <li>podcast_full.mp3</li>
+              <li>preview_intro_XXs.mp3</li>
+              <li>shorts_raw_9x16_editorial/</li>
+              <li>transcript.md</li>
+              <li>youtube_description.md</li>
+              <li>podcast_description.md</li>
+              <li>README_MANIFEST.md</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="small-panel">
+          <h3>Working Folder</h3>
+          <p>This is where the machine keeps the evidence, scratch files, QC material, and intermediate planning.</p>
+          <div class="folder">
+            <div class="folder-head">VIDEO_TITLE_WORKING/</div>
+            <ul>
+              <li>raw transcript JSON</li>
+              <li>raw-source transcript</li>
+              <li>shorts EDL records</li>
+              <li>QC stills and audio snippets</li>
+              <li>concat lists and temp files</li>
+              <li>render logs and validation notes</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="decisions">
+      <div class="section-title">
+        <div class="section-num">7</div>
+        <div>
+          <h2>Decisions To Confirm</h2>
+          <p>Most of the workflow is already defined. These are the format decisions that should be clarified before turning this into editor-facing SOP.</p>
+        </div>
+      </div>
+
+      <table class="decision-table">
+        <thead>
+          <tr>
+            <th>Decision</th>
+            <th>Current Recommendation</th>
+            <th>Owner</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Podcast description format</strong></td>
+            <td>Match the current published podcast style, then codify that as the standard output.</td>
+            <td>Adrienne / publishing owner</td>
+          </tr>
+          <tr>
+            <td><strong>YouTube description format</strong></td>
+            <td>Generate a description draft with chapters, title context, and upload notes.</td>
+            <td>Jon + editor</td>
+          </tr>
+          <tr>
+            <td><strong>Shorts review standard</strong></td>
+            <td>Five first-pass vertical clips, each self-contained, under two minutes, with clean starts and endings.</td>
+            <td>Editor / social media director</td>
+          </tr>
+          <tr>
+            <td><strong>Batch size</strong></td>
+            <td>Start with 2-5 videos per batch so the editor can feel the compounding workflow without overloading review.</td>
+            <td>Editor lead</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section" id="brief">
+      <div class="section-title">
+        <div class="section-num">8</div>
+        <div>
+          <h2>Copyable Briefing Summary</h2>
+          <p>This is intentionally plain-language. It can be pasted into an email, Slack message, or meeting agenda for Adrienne and the editor.</p>
+        </div>
+      </div>
+
+      <div class="copy-block">
+        <textarea id="briefText" readonly>We now have a two-stage production workflow for Nate Jones Media videos that is ready to explain to Adrienne and formalize for the editor.
+
+First, the radio edit pipeline turns raw talking-head footage into an editor-ready rough cut. It creates a word-level transcript, identifies the cleanest spoken flow, removes obvious false starts and repeated takes, and outputs an XML timeline the editor can import into their NLE. The editor still makes the judgment calls, but they start from an assembled timeline instead of a blank one.
+
+Second, after the editor exports the clean edit, the b-roll pipeline turns that approved edit into a full delivery package. It creates the final YouTube and Substack versions, b-roll graphics, vertical shorts, full podcast MP3, sub-1-minute preview MP3, readable transcript, delivery manifest, YouTube description with chapters, and a podcast description draft.
+
+The main time savings come from the staggered workflow. One editor can start radio edit prep for several videos, then move through XML review, clean exports, b-roll review, and final packaging while the machine handles the repetitive processing in the background. The more videos in the batch, the more the savings compound.
+
+The editor-facing rule is simple: raw media goes into the radio edit pipeline, the XML gets reviewed in the NLE, the clean export goes into the b-roll pipeline, b-roll gets reviewed before final composite, and final assets land in a clean deliverables folder.
+
+The remaining format decisions are podcast description style, final YouTube description structure, shorts review criteria, and the ideal batch size for a single editor.</textarea>
+        <div>
+          <button class="btn primary" type="button" data-copy-target="brief">Copy summary</button>
+          <span class="status" id="copyStatus" aria-live="polite"></span>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      Prepared as a single-file briefing artifact for Adrienne, the editor, and production workflow alignment.
+    </footer>
+  </main>
+
+  <script>
+    const copyStatus = document.getElementById("copyStatus");
+    const briefText = document.getElementById("briefText");
+
+    async function copyBrief() {
+      const text = briefText.value;
+      try {
+        await navigator.clipboard.writeText(text);
+        copyStatus.textContent = "Copied.";
+      } catch (error) {
+        briefText.focus();
+        briefText.select();
+        document.execCommand("copy");
+        copyStatus.textContent = "Copied.";
+      }
+      window.setTimeout(() => {
+        copyStatus.textContent = "";
+      }, 1800);
+    }
+
+    document.querySelectorAll("[data-copy-target='brief']").forEach((button) => {
+      button.addEventListener("click", copyBrief);
+    });
+  </script>
+</body>
+</html>
