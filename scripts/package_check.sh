@@ -59,6 +59,7 @@ for path in \
   "remotion/src/broll/templates/UtilityTemplates.tsx" \
   "remotion/src/broll/TemplateDemos.tsx" \
   "scripts/render_template_previews.sh" \
+  "scripts/prepare_cmp_delivery.py" \
   "docs/EDITOR_PACKAGE_README.md" \
   "docs/EDITOR_TRAINING_GUIDE.md"; do
   if [ -f "$REPO_ROOT/$path" ]; then

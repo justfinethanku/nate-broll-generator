@@ -304,31 +304,36 @@ The job is not done until both deliverables exist:
 
 ### Stage 9: Delivery Package, Audio Exports, And Shorts
 
-After the final composites exist, create a clean deliverables folder and a separate working folder in the video project directory:
+After the final composites exist, create a CMP-compatible clean upload folder and a separate working folder in the video project directory:
 
 ```bash
-<VIDEO_TITLE>_DELIVERABLES_<source_stem>/
-<VIDEO_TITLE>_WORKING_<source_stem>/
+deliverables/upload/
+deliverables/working/
 ```
 
-The deliverables folder must be safe to select-all and upload. It should contain only final handoff assets, not raw JSON, joined source media, EDL scratch files, QC snippets, or temp files.
+The `deliverables/upload/` folder must be safe to select-all and upload. It should contain only final handoff assets, not raw JSON, joined source media, EDL scratch files, QC snippets, or temp files. Keep `README_MANIFEST.md` as the human-facing manifest.
 
-Use simple editor-facing filenames inside the deliverables folder:
+Use the exact CMP-compatible filenames inside `deliverables/upload/`:
 
-- `<title>_final_youtube.mp4`
-- `<title>_final_substack.mp4`
-- `<title>_podcast_full.mp3`
-- `<title>_preview_intro_<duration>s.mp3`
-- `shorts_raw_9x16_editorial/`
-- `<title>_transcript.md`
-- `<title>_youtube_captions.srt`
-- `<title>_youtube_description.md`
-- `<title>_podcast_description.md`
+- `delivery_manifest.json`
 - `README_MANIFEST.md`
 - `broll_manifest.md`
+- `QC_NOTES.md` if useful/available
+- `transcript.md`
+- `youtube_description.md`
+- `podcast_description.md`
+- `youtube_captions.srt`
+- `youtube_final.mp4`
+- `substack_final.mp4`
+- `podcast.mp3`
+- `podcast_preview.mp3`
+- `shorts/`
+  - `short_01.mp4`
+  - `short_02.mp4`
+  - etc.
 - any useful QC contact sheets, if they exist
 
-Use the working folder for:
+Use `deliverables/working/` for:
 
 - raw AssemblyAI transcript JSON
 - raw-source readable transcript
@@ -345,11 +350,11 @@ Create a human-readable transcript Markdown file from the AssemblyAI transcript 
 - Include source video name, total duration, and generation date at the top.
 - If `chapters` are available, add a chapter/timestamp outline before the full transcript.
 - Preserve the words as spoken; do not rewrite the transcript into polished prose.
-- Save it as `<deliverables_dir>/<title>_transcript.md`.
+- Save it as `<upload_dir>/transcript.md`.
 
 Create a YouTube-ready captions file from the completed AssemblyAI transcript:
 
-- Save it as `<deliverables_dir>/<title>_youtube_captions.srt`.
+- Save it as `<upload_dir>/youtube_captions.srt`.
 - Use AssemblyAI's SRT subtitle export endpoint for the completed transcript ID; do not rely on YouTube auto-captions when an AssemblyAI transcript already exists.
 - Keep this YouTube-only for now. Do not add VTT, Resolve caption files, or custom caption CSVs unless the user asks.
 - Use plain UTF-8 SRT with no styling markup.
@@ -361,7 +366,7 @@ Create the full podcast MP3 from the final stitched source video audio unless th
 ```bash
 ffmpeg -y -i "<source_video>.mp4" \
   -map 0:a:0 -vn -codec:a libmp3lame -b:a 192k \
-  "<deliverables_dir>/<title>_podcast_full.mp3"
+  "<upload_dir>/podcast.mp3"
 ```
 
 Create a sub-60-second preview MP3 from the beginning. Choose a natural sentence or thought break from the transcript words; do not cut mid-phrase just to get closer to 60 seconds. Add a short fade out only if it improves the edit:
@@ -371,7 +376,7 @@ ffmpeg -y -i "<source_video>.mp4" \
   -map 0:a:0 -vn -t <break_seconds> \
   -af "afade=t=out:st=<fade_start>:d=0.30" \
   -codec:a libmp3lame -b:a 192k \
-  "<deliverables_dir>/<title>_preview_intro_<duration>s.mp3"
+  "<upload_dir>/podcast_preview.mp3"
 ```
 
 Preferred preview selection workflow:
@@ -383,7 +388,7 @@ Preferred preview selection workflow:
 
 Create a YouTube description draft with Nate's current format:
 
-- Save it as `<deliverables_dir>/<title>_youtube_description.md`.
+- Save it as `<upload_dir>/youtube_description.md`.
 - Start with one Substack link line when a post, playbook, skill pack, or interview URL is available:
   `<link label>: https://natesnewsletter.substack.com/...`
   Choose a concrete label such as `Full Post w/ ...`, `Full article w/ ...`, or `Exclusive Interview w/ ...`. If no URL is known, write `[SUBSTACK LINK TK]`.
@@ -408,7 +413,7 @@ Create a YouTube description draft with Nate's current format:
 
 Create a podcast description draft:
 
-- Save it as `<deliverables_dir>/<title>_podcast_description.md`.
+- Save it as `<upload_dir>/podcast_description.md`.
 - Use the Acast-native version of the YouTube description, not a copy/paste of the YouTube upload text.
 - Do not include chapters by default.
 - Do not include `Listen to this video as a podcast.` in the podcast description.
@@ -485,7 +490,7 @@ ffmpeg -nostdin -y -i "<source_video>.mp4" \
   -map 0:v:0 -map "0:a?" \
   -c:v libx264 -preset veryfast -crf 18 \
   -c:a aac -b:a 192k -movflags +faststart \
-  "<deliverables_dir>/shorts_raw_9x16_editorial/01_content_slug.mp4"
+  "<upload_dir>/shorts/short_01.mp4"
 ```
 
 For stitched clips, use `trim`/`atrim` plus `concat` in `filter_complex` so source ranges combine into one output. Keep the EDL in the working folder.
@@ -511,23 +516,101 @@ Create a human-readable `README_MANIFEST.md` in the deliverables folder. It must
 - short-video format and source
 - every generated short clip with number, filename, readable title, duration, source timestamp range(s), hook, payoff, self-contained note, and one-sentence summary
 
+Create the CMP machine manifest `delivery_manifest.json` in `deliverables/upload/` using schema version `1` exactly as documented in the CMP handoff:
+
+`/Users/jonathanedwards/AUTOMATION/SubStack/content-master-pro/docs/integrations/broll-delivery-ingest-handoff.md`
+
+If the main CMP checkout does not have that handoff yet, check the active CMP ingest worktree:
+
+`/Users/jonathanedwards/AUTOMATION/SubStack/content-master-pro-broll-ingest/docs/integrations/broll-delivery-ingest-handoff.md`
+
+Required shape:
+
+```json
+{
+  "schema_version": 1,
+  "delivery_id": "stable-video-package-slug",
+  "project": {
+    "name": "Human readable video title",
+    "publication_slug": "core_substack",
+    "source_video_title": "Human readable video title",
+    "source_video_path": "/optional/path/or/source/reference.mp4",
+    "external_ids": {}
+  },
+  "files": {
+    "transcript": "transcript.md",
+    "youtube_description": "youtube_description.md",
+    "podcast_description": "podcast_description.md",
+    "youtube_video": "youtube_final.mp4",
+    "substack_video": "substack_final.mp4",
+    "podcast_audio": "podcast.mp3",
+    "preview_audio": "podcast_preview.mp3",
+    "youtube_captions_srt": "youtube_captions.srt",
+    "readme_manifest": "README_MANIFEST.md",
+    "broll_manifest": "broll_manifest.md",
+    "qc_notes": "QC_NOTES.md"
+  },
+  "shorts": [
+    {
+      "id": "short_01",
+      "title": "Optional short title",
+      "path": "shorts/short_01.mp4",
+      "duration_seconds": 42,
+      "platforms": ["tiktok", "instagram", "youtube_shorts"],
+      "metadata": {}
+    }
+  ],
+  "metadata": {}
+}
+```
+
+Rules:
+
+- `schema_version` must be exactly `1`.
+- All file paths must be relative to `deliverables/upload/`.
+- `delivery_id` must be stable across retries for the same finished delivery.
+- Short IDs must be stable: `short_01`, `short_02`, etc.
+- Use a flat `shorts/` folder.
+- Do not upload video/audio through MCP or chat.
+- Do not add Google Drive as a dependency.
+
+You can normalize an existing package and emit the CMP manifest with:
+
+```bash
+python3 "$BROLL_HOME/scripts/prepare_cmp_delivery.py" \
+  --input-dir "<existing_delivery_folder>" \
+  --upload-dir "$PWD/deliverables/upload" \
+  --project-name "$VIDEO_TITLE" \
+  --video-title "$VIDEO_TITLE" \
+  --source-video-path "<source_video>.mp4" \
+  --publication-slug core_substack
+```
+
+After packaging, print this CMP dry-run command exactly so Jonathan or the editor can test the CMP ingest:
+
+```bash
+pnpm --dir "/Users/jonathanedwards/AUTOMATION/SubStack/content-master-pro" ingest:broll -- --deliverables-dir "$PWD/deliverables/upload" --project-name "$VIDEO_TITLE" --publication-slug core_substack --dry-run
+```
+
 ### Stage 10: Delivery Verification
 
 Verify:
 
 - both final composites exist
-- the deliverables folder exists
-- the working folder exists
-- the deliverables folder contains only handoff/upload assets
-- raw JSON, joined raw source media, EDL scratch files, QC snippets, and temp files are not in the deliverables folder
-- both copied platform videos exist inside the deliverables folder
-- the human-readable transcript Markdown exists inside the deliverables folder
-- the YouTube captions SRT exists inside the deliverables folder, is plain UTF-8, and came from AssemblyAI's completed transcript export
-- the YouTube description Markdown exists inside the deliverables folder and includes the Nate-format Substack/link placeholder, separator, common-story/reality framing, chapters or marked draft chapter candidates, and standard subscribe/podcast footer
-- the podcast description Markdown exists inside the deliverables folder and indicates whether the format is confirmed or draft
+- `deliverables/upload/` exists
+- `deliverables/working/` exists
+- `deliverables/upload/` contains only handoff/upload assets
+- raw JSON, joined raw source media, EDL scratch files, QC snippets, and temp files are not in `deliverables/upload/`
+- `delivery_manifest.json` exists in `deliverables/upload/` and has `schema_version: 1`
+- all paths in `delivery_manifest.json` are relative to `deliverables/upload/`
+- `youtube_final.mp4` and `substack_final.mp4` exist inside `deliverables/upload/`
+- the human-readable transcript exists as `transcript.md`
+- the YouTube captions SRT exists as `youtube_captions.srt`, is plain UTF-8, and came from AssemblyAI's completed transcript export
+- the YouTube description exists as `youtube_description.md` and includes the Nate-format Substack/link placeholder, separator, common-story/reality framing, chapters or marked draft chapter candidates, and standard subscribe/podcast footer
+- the podcast description exists as `podcast_description.md` and indicates whether the format is confirmed or draft
 - the full podcast MP3 exists and duration matches the source/final videos
 - the preview MP3 exists and is under 60 seconds
-- the editorial shorts folder exists
+- the editorial shorts folder exists as `shorts/`
 - there are exactly five first-pass editorial shorts unless the user requested a different count
 - every editorial short is `1080x1920`, has audio, and is under 2 minutes
 - every editorial short has a working EDL entry with hook, payoff, source ranges, and self-contained note
@@ -583,6 +666,7 @@ Do not jump straight to re-transcription or rebuilding everything unless the art
 - Never composite before explicit user approval.
 - Never leave the final deliverables scattered when the user asks for a full delivery package.
 - Never mix working files into the clean deliverables folder.
+- Never omit `delivery_manifest.json` from `deliverables/upload/`.
 - Never cut the preview audio mid-thought when a natural break under 60 seconds is available.
 - Never create short-video cutdowns from the b-roll composite unless the user explicitly asks.
 - Never use padded vertical shorts when raw wide media is available; use full 9x16 raw-source punch-ins with no padding.
@@ -595,4 +679,6 @@ Do not jump straight to re-transcription or rebuilding everything unless the art
 - Never rely on YouTube auto-captions when an AssemblyAI transcript is already available; include the YouTube-ready SRT caption file.
 - Never omit the YouTube description draft with Nate-format hook, chapters, and footer from a full delivery package.
 - Never call the podcast description final unless the current podcast format has been checked.
+- Never upload video/audio through MCP or chat.
+- Never add Google Drive as a dependency for CMP ingest.
 - Never end the job early if the user asked for the full pipeline.
