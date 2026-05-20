@@ -9,13 +9,16 @@ You are operating inside the `nate-broll-generator` repository. This is an autom
 When a user opens Codex in this repo for the first time, proactively check whether setup is complete by verifying:
 
 1. `~/.codex/.env` contains `BROLL_HOME=` pointing to this repo
-2. `~/.codex/skills/broll-pipeline/SKILL.md` exists
-3. `~/.codex/agents/broll-scout.md` exists
-4. `~/.codex/agents/broll-builder.md` exists
-5. `node_modules/` exists inside `remotion/`
-6. `assets/Youtube Chyron.mov` and `assets/Substack Chyron.mov` exist
+2. `~/.codex/skills/nate-broll-production/SKILL.md` exists
+3. `~/.codex/skills/broll-pipeline/SKILL.md` exists
+4. `~/.codex/skills/radio-edit/SKILL.md` exists
+5. `~/.codex/plugins/nate-broll-production/.codex-plugin/plugin.json` exists
+6. `~/.codex/agents/broll-scout.md` exists
+7. `~/.codex/agents/broll-builder.md` exists
+8. `node_modules/` exists inside `remotion/`
+9. `assets/Youtube Chyron.mov` and `assets/Substack Chyron.mov` exist
 
-If any of items 1-5 are missing, run:
+If any of items 1-8 are missing, run:
 
 ```bash
 REPO_ROOT="$(pwd)"
@@ -43,7 +46,10 @@ remotion/                  Standalone Remotion project for rendering b-roll clip
   public/logos/            Brand SVG logo pack + catalog + aliases
 
 Codex/                     Codex configuration source files
+  skills/nate-broll-production/SKILL.md  Top-level production operator/router
   skills/broll-pipeline/SKILL.md    Codex-native orchestration skill
+  skills/radio-edit/SKILL.md        Transcript-driven rough-cut skill
+  plugins/nate-broll-production/    Plugin-style package for the operator
   agents/broll-scout.md             Scout prompt wrapper
   agents/broll-builder.md           Builder prompt wrapper
   install.sh                        Copies config to ~/.codex/ and wires shell env
@@ -78,6 +84,9 @@ bash Codex/install.sh
 This copies:
 
 - `Codex/skills/broll-pipeline/SKILL.md` -> `~/.codex/skills/broll-pipeline/SKILL.md`
+- `Codex/skills/nate-broll-production/SKILL.md` -> `~/.codex/skills/nate-broll-production/SKILL.md`
+- `Codex/skills/radio-edit/SKILL.md` -> `~/.codex/skills/radio-edit/SKILL.md`
+- `Codex/plugins/nate-broll-production/` -> `~/.codex/plugins/nate-broll-production/`
 - `Codex/agents/broll-scout.md` -> `~/.codex/agents/broll-scout.md`
 - `Codex/agents/broll-builder.md` -> `~/.codex/agents/broll-builder.md`
 
@@ -95,9 +104,16 @@ Typical usage:
 
 1. Put the source video in its own project folder
 2. Open Codex in that folder
-3. Say `Use $broll-pipeline on video.mp4` or `run the b-roll process on video.mp4`
+3. Say `Use $nate-broll-production on video.mp4` for the full production router, or use `$radio-edit` / `$broll-pipeline` directly when you already know the stage.
 
 If the user tries to run the pipeline from this repo root, remind them the workflow should run from the folder containing the source video.
+
+Use `$nate-broll-production` when the operator needs to decide timing:
+
+- raw media -> radio edit package -> editor NLE review
+- clean edit -> b-roll generation -> approval gate
+- final composites -> `deliverables/upload/`
+- clean upload folder -> CMP handoff
 
 ---
 

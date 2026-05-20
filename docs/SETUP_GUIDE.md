@@ -81,7 +81,9 @@ git pull
 What this does:
 
 - installs Remotion dependencies
-- installs the Codex b-roll skill into `~/.codex/skills/broll-pipeline/`
+- installs the Codex production router into `~/.codex/skills/nate-broll-production/`
+- installs the specialist b-roll and radio edit skills into `~/.codex/skills/`
+- installs the plugin-style package into `~/.codex/plugins/nate-broll-production/`
 - installs Codex agent prompt wrappers into `~/.codex/agents/`
 - writes `BROLL_HOME` into `~/.codex/.env`
 - asks for the AssemblyAI API key if missing
@@ -145,10 +147,16 @@ Put the source `.mp4` in that folder.
 Open Codex in that video folder and say:
 
 ```text
-Use $broll-pipeline on MY-VIDEO-NAME.mp4
+Use $nate-broll-production on MY-VIDEO-NAME.mp4
 ```
 
-Codex should run the pipeline automatically and pause before final compositing.
+Codex should classify the folder first:
+
+- raw recording -> `$radio-edit` package for the editor
+- clean edit export -> `$broll-pipeline` b-roll run
+- finished package -> delivery/CMP verification
+
+The direct `$broll-pipeline` command is still available when the clean edit is already ready and you want to skip the stage check.
 
 ## Editor Approval Role
 
@@ -178,6 +186,7 @@ git pull
 
 ## Important Files
 
+- [EDITOR_ONBOARDING_CALL_GUIDE.md](EDITOR_ONBOARDING_CALL_GUIDE.md)
 - [EDITOR_PACKAGE_README.md](EDITOR_PACKAGE_README.md)
 - [EDITOR_TRAINING_GUIDE.md](EDITOR_TRAINING_GUIDE.md)
 - [DAILY_WORKFLOW.md](DAILY_WORKFLOW.md)

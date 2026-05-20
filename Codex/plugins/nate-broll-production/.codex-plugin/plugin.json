@@ -1,0 +1,42 @@
+{
+  "name": "nate-broll-production",
+  "version": "0.1.0",
+  "description": "Orchestrate Nate Jones Media video production from raw media through radio edit, b-roll, deliverables, and CMP handoff.",
+  "author": {
+    "name": "Nate Jones Media",
+    "email": "jon@contentionmedia.com"
+  },
+  "homepage": "https://www.limitededitionjonathan.com/docs/nate-broll-editor-onboarding",
+  "repository": "https://github.com/justfinethanku/nate-broll-generator",
+  "license": "UNLICENSED",
+  "keywords": [
+    "nate",
+    "b-roll",
+    "radio-edit",
+    "remotion",
+    "cmp",
+    "video-production"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Nate B-Roll Production",
+    "shortDescription": "Run Nate's video workflow in the right order",
+    "longDescription": "A production-operator plugin for Nate Jones Media videos. It decides whether a source needs radio-edit prep, editor review, b-roll generation, final compositing, or CMP packaging, then routes Codex to the correct specialist skill at the correct time.",
+    "developerName": "Nate Jones Media",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://www.limitededitionjonathan.com/docs/nate-broll-editor-onboarding",
+    "privacyPolicyURL": "https://www.limitededitionjonathan.com",
+    "termsOfServiceURL": "https://www.limitededitionjonathan.com",
+    "defaultPrompt": [
+      "Run the Nate production workflow for this video",
+      "Tell me the next production step for this folder",
+      "Prepare this finished video for CMP handoff"
+    ],
+    "brandColor": "#1F6A5A",
+    "screenshots": []
+  }
+}

@@ -78,6 +78,7 @@ mkdir -p "$CODEX_HOME/agents"
 mkdir -p "$SHELL_DIR"
 
 for f in \
+  "$CODEX_HOME/skills/nate-broll-production/SKILL.md" \
   "$CODEX_HOME/skills/broll-pipeline/SKILL.md" \
   "$CODEX_HOME/skills/radio-edit/SKILL.md" \
   "$CODEX_HOME/agents/broll-scout.md" \
@@ -96,6 +97,19 @@ for skill_dir in "$SCRIPT_DIR"/skills/*; do
     echo "  Installed: $CODEX_HOME/skills/$skill_name/SKILL.md"
   fi
 done
+
+if [ -d "$SCRIPT_DIR/plugins" ]; then
+  mkdir -p "$CODEX_HOME/plugins"
+  for plugin_dir in "$SCRIPT_DIR"/plugins/*; do
+    if [ -d "$plugin_dir" ] && [ -f "$plugin_dir/.codex-plugin/plugin.json" ]; then
+      plugin_name="$(basename "$plugin_dir")"
+      rm -rf "$CODEX_HOME/plugins/$plugin_name"
+      mkdir -p "$CODEX_HOME/plugins/$plugin_name"
+      cp -R "$plugin_dir"/. "$CODEX_HOME/plugins/$plugin_name/"
+      echo "  Installed plugin: $CODEX_HOME/plugins/$plugin_name/.codex-plugin/plugin.json"
+    fi
+  done
+fi
 
 cp "$SCRIPT_DIR/agents/broll-scout.md" "$CODEX_HOME/agents/broll-scout.md"
 cp "$SCRIPT_DIR/agents/broll-builder.md" "$CODEX_HOME/agents/broll-builder.md"

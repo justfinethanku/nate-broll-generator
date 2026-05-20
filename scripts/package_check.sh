@@ -52,15 +52,20 @@ echo ""
 echo "Repo Files"
 for path in \
   "Codex/install.sh" \
+  "Codex/skills/nate-broll-production/SKILL.md" \
   "Codex/skills/broll-pipeline/SKILL.md" \
+  "Codex/skills/radio-edit/SKILL.md" \
   "Codex/agents/broll-scout.md" \
   "Codex/agents/broll-builder.md" \
+  "Codex/plugins/nate-broll-production/.codex-plugin/plugin.json" \
+  "Codex/plugins/nate-broll-production/skills/nate-broll-production/SKILL.md" \
   "remotion/src/broll/templates/templateToolRegistry.tsx" \
   "remotion/src/broll/templates/UtilityTemplates.tsx" \
   "remotion/src/broll/TemplateDemos.tsx" \
   "scripts/render_template_previews.sh" \
   "scripts/prepare_cmp_delivery.py" \
   "docs/EDITOR_PACKAGE_README.md" \
+  "docs/EDITOR_ONBOARDING_CALL_GUIDE.md" \
   "docs/EDITOR_TRAINING_GUIDE.md"; do
   if [ -f "$REPO_ROOT/$path" ]; then
     ok "$path"
@@ -90,7 +95,9 @@ else
 fi
 
 for path in \
+  "$HOME/.codex/skills/nate-broll-production/SKILL.md" \
   "$HOME/.codex/skills/broll-pipeline/SKILL.md" \
+  "$HOME/.codex/skills/radio-edit/SKILL.md" \
   "$HOME/.codex/agents/broll-scout.md" \
   "$HOME/.codex/agents/broll-builder.md"; do
   if [ -f "$path" ]; then
@@ -99,6 +106,12 @@ for path in \
     fail "$path missing; run ./setup.sh codex"
   fi
 done
+
+if [ -f "$HOME/.codex/plugins/nate-broll-production/.codex-plugin/plugin.json" ]; then
+  ok "$HOME/.codex/plugins/nate-broll-production/.codex-plugin/plugin.json"
+else
+  fail "$HOME/.codex/plugins/nate-broll-production/.codex-plugin/plugin.json missing; run ./setup.sh codex"
+fi
 
 echo ""
 echo "Assets"

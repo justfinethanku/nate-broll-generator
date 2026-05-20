@@ -26,9 +26,16 @@ See [`CODEX.md`](./CODEX.md) and [`BOOTSTRAP_CODEX.md`](./BOOTSTRAP_CODEX.md) fo
 
 1. Place your source `.mp4` in a project folder
 2. Open Codex in that folder
-3. Say: `Use $broll-pipeline on source.mp4`
+3. Say: `Use $nate-broll-production on source.mp4`
 
-The Claude-specific legacy files remain in `claude/`, but the editor handoff should use the Codex docs.
+Use `$nate-broll-production` as the normal front door. It decides whether the folder needs a radio edit package, a clean-export b-roll run, delivery verification, or CMP handoff. Use `$radio-edit` or `$broll-pipeline` directly only when you already know that specific stage is the right one.
+
+The Claude-specific legacy files remain in `claude/`, but the editor handoff should use the Codex docs:
+
+- [`docs/EDITOR_ONBOARDING_CALL_GUIDE.md`](./docs/EDITOR_ONBOARDING_CALL_GUIDE.md) for first-call setup
+- [`docs/SETUP_GUIDE.md`](./docs/SETUP_GUIDE.md) for machine setup
+- [`docs/DAILY_WORKFLOW.md`](./docs/DAILY_WORKFLOW.md) for normal project runs
+- [`docs/EDITOR_TRAINING_GUIDE.md`](./docs/EDITOR_TRAINING_GUIDE.md) for approval/QC expectations
 
 ## Structure
 

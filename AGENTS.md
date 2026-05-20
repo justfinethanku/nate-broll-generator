@@ -9,13 +9,16 @@ You are operating inside the `nate-broll-generator` repository. This is an autom
 When a user opens Codex in this repo for the first time, **proactively check if setup has been completed** by verifying:
 
 1. `~/.codex/.env` contains `BROLL_HOME=` pointing to this repo
-2. `~/.codex/skills/broll-pipeline/SKILL.md` exists
-3. `~/.codex/agents/broll-scout.md` exists
-4. `~/.codex/agents/broll-builder.md` exists
-5. `node_modules/` exists inside `remotion/`
-6. `assets/Youtube Chyron.mov` and `assets/Substack Chyron.mov` exist
+2. `~/.codex/skills/nate-broll-production/SKILL.md` exists
+3. `~/.codex/skills/broll-pipeline/SKILL.md` exists
+4. `~/.codex/skills/radio-edit/SKILL.md` exists
+5. `~/.codex/plugins/nate-broll-production/.codex-plugin/plugin.json` exists
+6. `~/.codex/agents/broll-scout.md` exists
+7. `~/.codex/agents/broll-builder.md` exists
+8. `node_modules/` exists inside `remotion/`
+9. `assets/Youtube Chyron.mov` and `assets/Substack Chyron.mov` exist
 
-**If any of items 1-5 are missing**, run the setup automatically:
+**If any of items 1-8 are missing**, run the setup automatically:
 
 ```bash
 REPO_ROOT="$(pwd)"
@@ -27,7 +30,7 @@ cd "$REPO_ROOT/remotion" && pnpm install
 bash "$REPO_ROOT/Codex/install.sh" "$REPO_ROOT"
 ```
 
-**If chyrons (item 6) are missing**, inform the user:
+**If chyrons (item 9) are missing**, inform the user:
 > "The chyron overlay files aren't in `assets/` yet. These are the branded lower-thirds for YouTube and Substack deliverables (~15 GB total). Ask Jon for the download link and place them in `assets/`."
 
 **If `ASSEMBLYAI_API_KEY` is not in `~/.codex/.env`**, inform the user:
@@ -45,7 +48,10 @@ remotion/                  Standalone Remotion project for rendering b-roll clip
   public/logos/            3,428 brand SVG logos + catalog.json + aliases.json
 
 Codex/                    Codex configuration source files
+  skills/nate-broll-production/SKILL.md  Top-level production router
   skills/broll-pipeline/SKILL.md    Pipeline orchestration skill
+  skills/radio-edit/SKILL.md        Transcript-driven rough-cut skill
+  plugins/nate-broll-production/    Plugin-style package for the router
   agents/broll-scout.md             Scout prompt wrapper
   agents/broll-builder.md           Builder prompt wrapper
   install.sh                        Copies config to ~/.codex/ and wires shell env
@@ -82,7 +88,10 @@ bash Codex/install.sh
 ```
 
 This copies:
+- `Codex/skills/nate-broll-production/SKILL.md` → `~/.codex/skills/nate-broll-production/SKILL.md`
 - `Codex/skills/broll-pipeline/SKILL.md` → `~/.codex/skills/broll-pipeline/SKILL.md`
+- `Codex/skills/radio-edit/SKILL.md` → `~/.codex/skills/radio-edit/SKILL.md`
+- `Codex/plugins/nate-broll-production/` → `~/.codex/plugins/nate-broll-production/`
 - `Codex/agents/broll-scout.md` → `~/.codex/agents/broll-scout.md`
 - `Codex/agents/broll-builder.md` → `~/.codex/agents/broll-builder.md`
 
@@ -99,8 +108,17 @@ The pipeline is invoked by naming the installed Codex skill or asking for the wo
 **Typical usage:**
 1. User has a video file somewhere (e.g., `~/Videos/project/video.mp4`)
 2. User opens Codex in that video's directory
-3. User says `Use $broll-pipeline on video.mp4` or "run the b-roll process on this video"
-4. The skill handles everything from there
+3. User says `Use $nate-broll-production on video.mp4` or "run the Nate production workflow on this video"
+4. The router decides the stage and calls the right specialist path
+
+Use `$nate-broll-production` as the default front door:
+
+- raw recording → `$radio-edit` package → editor imports/reviews/exports a clean edit
+- clean edit export → `$broll-pipeline` → b-roll approval gate
+- final composites → `deliverables/upload/`
+- clean upload folder → CMP handoff verification
+
+Use `$radio-edit` or `$broll-pipeline` directly only when the stage is already known.
 
 **If the user asks to run the pipeline from within this repo directory**, remind them:
 > "The pipeline should be run from the directory containing your source video, not from the repo itself. Should I help you navigate to your video project folder?"
