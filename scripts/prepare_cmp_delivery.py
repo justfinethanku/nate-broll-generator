@@ -304,17 +304,17 @@ def main() -> int:
     print(f"Upload folder: {upload_dir}")
     print(f"Manifest: {upload_dir / 'delivery_manifest.json'}")
     print("")
-    print("CMP dry-run command template:")
+    print("CMP direct-upload dry-run command template:")
     print(
-        'pnpm --dir "/Users/jonathanedwards/AUTOMATION/SubStack/content-master-pro" '
-        'ingest:broll -- --deliverables-dir "$PWD/deliverables/upload" '
+        'node "$BROLL_HOME/scripts/cmp_upload_delivery.mjs" '
+        '--deliverables-dir "$PWD/deliverables/upload" '
         '--project-name "$VIDEO_TITLE" --publication-slug core_substack --dry-run'
     )
     print("")
-    print("CMP dry-run command for this package:")
+    print("CMP direct-upload dry-run command for this package:")
     print(
-        'pnpm --dir "/Users/jonathanedwards/AUTOMATION/SubStack/content-master-pro" '
-        f'ingest:broll -- --deliverables-dir "{upload_dir}" '
+        'node "$BROLL_HOME/scripts/cmp_upload_delivery.mjs" '
+        f'--deliverables-dir "{upload_dir}" '
         f'--project-name "{project_name}" --publication-slug {args.publication_slug} --dry-run'
     )
     return 0

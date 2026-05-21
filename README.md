@@ -9,6 +9,7 @@ Automated b-roll pipeline for Nate Jones Media videos. Uses Codex + Remotion to 
 3. Generates approved template tool calls and thin Remotion wrappers
 4. Renders clips sequentially
 5. Composites onto source video with YouTube/Substack chyrons
+6. Packages and uploads finished deliverables directly to Content Master Pro via Supabase
 
 ## Quick Start
 
@@ -29,6 +30,18 @@ See [`CODEX.md`](./CODEX.md) and [`BOOTSTRAP_CODEX.md`](./BOOTSTRAP_CODEX.md) fo
 3. Say: `Use $nate-broll-production on source.mp4`
 
 Use `$nate-broll-production` as the normal front door. It decides whether the folder needs a radio edit package, a clean-export b-roll run, delivery verification, or CMP handoff. Use `$radio-edit` or `$broll-pipeline` directly only when you already know that specific stage is the right one.
+
+Finished CMP uploads do not require a local Content Master Pro repo. Use the standalone uploader after `deliverables/upload/` exists:
+
+```bash
+node "$BROLL_HOME/scripts/cmp_upload_delivery.mjs" \
+  --deliverables-dir "$PWD/deliverables/upload" \
+  --project-name "VIDEO TITLE HERE" \
+  --publication-slug core_substack \
+  --dry-run
+```
+
+Live upload requires CMP Supabase credentials in `~/.codex/.env` and uses `--yes` instead of `--dry-run`.
 
 The Claude-specific legacy files remain in `claude/`, but the editor handoff should use the Codex docs:
 

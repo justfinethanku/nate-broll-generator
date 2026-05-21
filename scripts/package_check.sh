@@ -64,6 +64,8 @@ for path in \
   "remotion/src/broll/TemplateDemos.tsx" \
   "scripts/render_template_previews.sh" \
   "scripts/prepare_cmp_delivery.py" \
+  "scripts/cmp_upload_delivery.mjs" \
+  "scripts/test_cmp_upload_delivery.mjs" \
   "docs/EDITOR_PACKAGE_README.md" \
   "docs/EDITOR_ONBOARDING_CALL_GUIDE.md" \
   "docs/EDITOR_TRAINING_GUIDE.md"; do
@@ -92,6 +94,18 @@ if grep -q "^ASSEMBLYAI_API_KEY=" "$HOME/.codex/.env" 2>/dev/null; then
   ok "ASSEMBLYAI_API_KEY configured"
 else
   fail "ASSEMBLYAI_API_KEY missing from ~/.codex/.env"
+fi
+
+if grep -Eq "^(CMP_SUPABASE_URL|NEXT_PUBLIC_SUPABASE_URL)=" "$HOME/.codex/.env" 2>/dev/null; then
+  ok "CMP Supabase URL configured"
+else
+  warn "CMP Supabase URL missing; required only for direct CMP upload"
+fi
+
+if grep -Eq "^(CMP_SUPABASE_SERVICE_ROLE_KEY|SUPABASE_SERVICE_ROLE_KEY)=" "$HOME/.codex/.env" 2>/dev/null; then
+  ok "CMP service-role key configured"
+else
+  warn "CMP service-role key missing; required only for direct CMP upload"
 fi
 
 for path in \
@@ -141,6 +155,14 @@ fi
     fail "TypeScript compile failed; see /tmp/nate-broll-tsc.log"
   fi
 )
+
+echo ""
+echo "CMP Upload"
+if node "$REPO_ROOT/scripts/test_cmp_upload_delivery.mjs" >/tmp/nate-broll-cmp-upload-test.log 2>&1; then
+  ok "direct CMP upload smoke test"
+else
+  fail "direct CMP upload smoke test failed; see /tmp/nate-broll-cmp-upload-test.log"
+fi
 
 echo ""
 echo "Summary"

@@ -516,13 +516,9 @@ Create a human-readable `README_MANIFEST.md` in the deliverables folder. It must
 - short-video format and source
 - every generated short clip with number, filename, readable title, duration, source timestamp range(s), hook, payoff, self-contained note, and one-sentence summary
 
-Create the CMP machine manifest `delivery_manifest.json` in `deliverables/upload/` using schema version `1` exactly as documented in the CMP handoff:
+Create the CMP machine manifest `delivery_manifest.json` in `deliverables/upload/` using schema version `1`.
 
-`/Users/jonathanedwards/AUTOMATION/SubStack/content-master-pro/docs/integrations/broll-delivery-ingest-handoff.md`
-
-If the main CMP checkout does not have that handoff yet, check the active CMP ingest worktree:
-
-`/Users/jonathanedwards/AUTOMATION/SubStack/content-master-pro-broll-ingest/docs/integrations/broll-delivery-ingest-handoff.md`
+The b-roll repo owns the editor-facing upload path. Do not require a local private Content Master Pro checkout for editor machines; the standalone uploader at `$BROLL_HOME/scripts/cmp_upload_delivery.mjs` reads this manifest and uploads directly to CMP's Supabase project.
 
 Required shape:
 
@@ -573,6 +569,7 @@ Rules:
 - Use a flat `shorts/` folder.
 - Do not upload video/audio through MCP or chat.
 - Do not add Google Drive as a dependency.
+- Do not require the private Content Master Pro repo for editor upload.
 
 You can normalize an existing package and emit the CMP manifest with:
 
@@ -586,11 +583,13 @@ python3 "$BROLL_HOME/scripts/prepare_cmp_delivery.py" \
   --publication-slug core_substack
 ```
 
-After packaging, print this CMP dry-run command exactly so Jonathan or the editor can test the CMP ingest:
+After packaging, print this CMP direct-upload dry-run command exactly so Jonathan or the editor can test the CMP ingest:
 
 ```bash
-pnpm --dir "/Users/jonathanedwards/AUTOMATION/SubStack/content-master-pro" ingest:broll -- --deliverables-dir "$PWD/deliverables/upload" --project-name "$VIDEO_TITLE" --publication-slug core_substack --dry-run
+node "$BROLL_HOME/scripts/cmp_upload_delivery.mjs" --deliverables-dir "$PWD/deliverables/upload" --project-name "$VIDEO_TITLE" --publication-slug core_substack --dry-run
 ```
+
+Only replace `--dry-run` with `--yes` after Jonathan or the operator confirms the parsed mapping.
 
 ### Stage 10: Delivery Verification
 
@@ -681,4 +680,5 @@ Do not jump straight to re-transcription or rebuilding everything unless the art
 - Never call the podcast description final unless the current podcast format has been checked.
 - Never upload video/audio through MCP or chat.
 - Never add Google Drive as a dependency for CMP ingest.
+- Never require the private Content Master Pro repo for editor CMP upload.
 - Never end the job early if the user asked for the full pipeline.

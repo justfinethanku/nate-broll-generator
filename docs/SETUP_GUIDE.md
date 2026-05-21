@@ -15,6 +15,7 @@ Time estimate:
 - Codex app or Codex CLI access
 - GitHub access to this repo
 - AssemblyAI API key from Jon
+- CMP Supabase upload credentials from Jon, if this editor will upload finished packages
 - Chyron files from Jon
 - Terminal comfort enough to copy/paste commands
 
@@ -91,7 +92,27 @@ What this does:
 
 If the script asks for the AssemblyAI API key, paste the key from Jon.
 
-## 6. Add Chyron Files
+## 6. Add CMP Upload Credentials
+
+This does not require the private Content Master Pro repo. The b-roll repo uploads finished packages directly to CMP's Supabase project.
+
+Add these values to `~/.codex/.env`:
+
+```bash
+CMP_SUPABASE_URL="https://uaiiskuioqirpcaliljh.supabase.co"
+CMP_SUPABASE_SERVICE_ROLE_KEY="<ask Jon>"
+CMP_SYNC_USER_ID="<ask Jon if available>"
+```
+
+Then lock the file down:
+
+```bash
+chmod 600 ~/.codex/.env
+```
+
+Do not put these keys in this repo, and do not commit them.
+
+## 7. Add Chyron Files
 
 Download these files from Jon and place them in `assets/`:
 
@@ -110,7 +131,7 @@ ls -lh assets/
 
 You should see both `.mov` files.
 
-## 7. Run Package Check
+## 8. Run Package Check
 
 From the repo root:
 
@@ -120,7 +141,7 @@ From the repo root:
 
 This verifies the local install, required files, Codex skill files, chyrons, and TypeScript.
 
-## 8. Render Template Previews
+## 9. Render Template Previews
 
 This is the simplest visual smoke test:
 
@@ -134,7 +155,7 @@ It renders still previews for the approved template menu into:
 remotion/out/template-previews/
 ```
 
-## 9. First Real Run
+## 10. First Real Run
 
 Create a project folder for a video:
 
@@ -154,9 +175,21 @@ Codex should classify the folder first:
 
 - raw recording -> `$radio-edit` package for the editor
 - clean edit export -> `$broll-pipeline` b-roll run
-- finished package -> delivery/CMP verification
+- finished package -> delivery/CMP verification and direct CMP upload dry run
 
 The direct `$broll-pipeline` command is still available when the clean edit is already ready and you want to skip the stage check.
+
+For a finished package, the upload dry run is:
+
+```bash
+node "$BROLL_HOME/scripts/cmp_upload_delivery.mjs" \
+  --deliverables-dir "$PWD/deliverables/upload" \
+  --project-name "VIDEO TITLE HERE" \
+  --publication-slug core_substack \
+  --dry-run
+```
+
+Only replace `--dry-run` with `--yes` after Jon or the operator approves the parsed mapping.
 
 ## Editor Approval Role
 
