@@ -19,7 +19,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 
 const state = {
-  project: null,
+  project: {
+    id: "existing-project-1",
+    project_id: "20260520_existing",
+    name: "Test Video",
+    publication_id: "publication-1",
+    status: "review",
+    metadata: {},
+    created_at: "2026-05-20T12:00:00Z",
+  },
   projects: [],
   assets: new Map(),
   fileRows: [],
@@ -31,6 +39,8 @@ const state = {
     file: 0,
   },
 };
+
+state.projects.push(state.project);
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -61,6 +71,19 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && table === "projects") {
       if (url.searchParams.has("metadata")) return sendJson(res, 200, []);
       if (url.searchParams.has("project_id")) return sendJson(res, 200, []);
+      if (url.searchParams.has("publication_id") && url.searchParams.has("name")) {
+        const nameFilter = (url.searchParams.get("name") ?? "").replace(/^ilike\./, "");
+        const publicationId = (url.searchParams.get("publication_id") ?? "").replace(/^eq\./, "");
+        return sendJson(
+          res,
+          200,
+          state.projects.filter(
+            (project) =>
+              project.publication_id === publicationId &&
+              project.name.toLowerCase() === nameFilter.toLowerCase()
+          )
+        );
+      }
       return sendJson(res, 200, state.projects);
     }
 
@@ -75,7 +98,12 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === "PATCH" && table === "projects") {
-      state.project = { ...state.project, ...body };
+      const idFilter = url.searchParams.get("id") ?? "";
+      const projectId = idFilter.replace(/^eq\./, "");
+      state.project = { ...(state.projects.find((project) => project.id === projectId) ?? state.project), ...body };
+      state.projects = state.projects.map((project) =>
+        project.id === state.project.id ? state.project : project
+      );
       return sendJson(res, 200, [state.project]);
     }
 
@@ -135,8 +163,16 @@ try {
   const output = await runUploader(port, uploadDir);
 
   assert.match(output, /Done\./);
+  assert.match(output, /Matched existing CMP project by title/);
   assert.match(output, /Files uploaded: 11/);
   assert.equal(state.projects.length, 1);
+  assert.equal(state.ids.project, 0);
+  assert.equal(state.project.project_id, "20260520_existing");
+  assert.equal(
+    state.project.metadata.broll_delivery.package_key,
+    "test-video",
+    "existing project should receive b-roll metadata"
+  );
   assert.equal(state.assets.size, 10);
   assert.equal(state.fileRows.length, 11);
   assert.equal(state.assetVersions.length, 10);

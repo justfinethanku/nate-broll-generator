@@ -575,6 +575,7 @@ function printDryRun(plan, args) {
   const projectHumanId = args.projectId || buildHumanProjectId(new Date(), plan.packageKey);
   console.log("");
   console.log("[dry-run] No Supabase writes or Storage uploads will be performed.");
+  console.log("[dry-run] Live upload will reuse an exact package/title project match when one exists.");
   console.log(`[dry-run] Project ${args.projectId ? "would update" : "would create/update"}: ${projectHumanId}`);
   console.log("");
   console.log("[dry-run] Asset/file mapping:");
@@ -675,9 +676,7 @@ async function resolvePublication(client, publicationSlug) {
 }
 
 async function upsertProject(client, plan, args, publication, createdBy) {
-  const existing = args.projectId
-    ? await findProjectByInputId(client, args.projectId)
-    : await findProjectByPackageKey(client, plan.packageKey);
+  const existing = await resolveExistingProject(client, plan, args, publication);
   const metadata = buildProjectMetadata(existing?.metadata ?? {}, plan);
 
   if (existing) {
@@ -713,12 +712,85 @@ async function upsertProject(client, plan, args, publication, createdBy) {
   return rows[0];
 }
 
+async function resolveExistingProject(client, plan, args, publication) {
+  if (args.projectId) {
+    const existing = await findProjectByInputId(client, args.projectId);
+    if (!existing) {
+      throw new Error(`No CMP project found for --project-id ${args.projectId}.`);
+    }
+    return existing;
+  }
+
+  const packageMatch = await findProjectByPackageKey(client, plan.packageKey);
+  if (packageMatch) return packageMatch;
+
+  return findProjectByExactTitle(client, plan, publication);
+}
+
 async function findProjectByInputId(client, projectId) {
   const queryKey = isUuid(projectId) ? "id" : "project_id";
   const rows = await restRequest(client, "projects", {
     query: { select: "*", [queryKey]: `eq.${projectId}`, limit: "1" },
   });
   return rows[0] ?? null;
+}
+
+async function findProjectByExactTitle(client, plan, publication) {
+  const titleSeeds = uniqueStrings([
+    plan.projectName,
+    plan.manifest?.project?.name,
+    plan.manifest?.project?.source_video_title,
+  ]);
+  const normalizedSeeds = new Set(titleSeeds.map(normalizeTitleForMatch));
+  if (normalizedSeeds.size === 0) return null;
+
+  const candidatesById = new Map();
+  for (const title of titleSeeds) {
+    const rows = await restRequest(client, "projects", {
+      query: {
+        select: "id,project_id,name,status,metadata,publication_id,created_at",
+        publication_id: `eq.${publication.id}`,
+        name: `ilike.${escapePostgrestLike(title)}`,
+        order: "created_at.desc",
+        limit: "20",
+      },
+    });
+    for (const row of rows) {
+      if (normalizedSeeds.has(normalizeTitleForMatch(row.name))) {
+        candidatesById.set(row.id, row);
+      }
+    }
+  }
+
+  const candidates = [...candidatesById.values()];
+  if (candidates.length === 0) return null;
+
+  const conflictingBrollProjects = candidates.filter((project) => {
+    const existingKey = project.metadata?.broll_delivery?.package_key;
+    return existingKey && existingKey !== plan.packageKey;
+  });
+  if (conflictingBrollProjects.length > 0) {
+    throw new Error(
+      [
+        "Found an exact-title CMP project, but it already has different b-roll delivery metadata.",
+        "Pass the intended CMP project explicitly with --project-id.",
+        formatProjectCandidates(conflictingBrollProjects),
+      ].join("\n")
+    );
+  }
+
+  if (candidates.length > 1) {
+    throw new Error(
+      [
+        "Found multiple exact-title CMP projects. Refusing to create another duplicate.",
+        "Pass the intended CMP project explicitly with --project-id.",
+        formatProjectCandidates(candidates),
+      ].join("\n")
+    );
+  }
+
+  console.log(`Matched existing CMP project by title: ${candidates[0].name} (${candidates[0].project_id})`);
+  return candidates[0];
 }
 
 async function findProjectByPackageKey(client, packageKey) {
@@ -730,6 +802,15 @@ async function findProjectByPackageKey(client, packageKey) {
     },
   });
   return rows[0] ?? null;
+}
+
+function formatProjectCandidates(projects) {
+  return projects
+    .map(
+      (project) =>
+        `  - ${project.project_id} | ${project.name} | status=${project.status} | created=${project.created_at}`
+    )
+    .join("\n");
 }
 
 async function generateAvailableProjectId(client, plan) {
@@ -1295,6 +1376,21 @@ function normalizePackageKey(value) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
   return normalized || "broll-delivery";
+}
+
+function normalizeTitleForMatch(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function uniqueStrings(values) {
+  return [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))];
+}
+
+function escapePostgrestLike(value) {
+  return String(value).replace(/[\\%_*]/g, (match) => `\\${match}`);
 }
 
 function normalizeShortId(value) {
