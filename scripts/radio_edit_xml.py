@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Create a transcript-driven radio-edit FCPXML from AssemblyAI word timings."""
+"""Create a transcript-driven radio-edit FCPXML from AssemblyAI word timings.
+
+All timeline math is done in exact rational arithmetic (fractions.Fraction):
+word timings, pads, durations, and offsets never accumulate float error, and
+frame rates can be exact rationals such as 24000/1001 (23.976) or
+30000/1001 (29.97). Alongside FCPXML/EDL/decisions/cuts artifacts, the script
+emits a retimed SRT caption sidecar whose cues live on the edited timeline.
+"""
 
 from __future__ import annotations
 
@@ -11,6 +18,7 @@ import math
 import re
 from collections import Counter
 from dataclasses import dataclass
+from fractions import Fraction
 from pathlib import Path
 from typing import Iterable
 
@@ -160,8 +168,8 @@ class Word:
     index: int
     text: str
     clean: str
-    start: float
-    end: float
+    start: Fraction
+    end: Fraction
     remove: bool = False
     reason: str = ""
 
@@ -170,14 +178,32 @@ class Word:
 class Segment:
     start_i: int
     end_i: int
-    start: float
-    end: float
+    start: Fraction
+    end: Fraction
     text: str
     norm_tokens: list[str]
 
     @property
-    def duration(self) -> float:
+    def duration(self) -> Fraction:
         return self.end - self.start
+
+
+def to_fraction(value: object) -> Fraction:
+    """Convert JSON/CLI numbers to an exact Fraction.
+
+    Floats go through their shortest string representation so a value that was
+    parsed from "1.234" becomes the exact rational 1234/1000 rather than the
+    float's binary expansion; ints, Fractions, and numeric strings pass
+    through exactly.
+    """
+    if isinstance(value, Fraction):
+        return value
+    if isinstance(value, float):
+        try:
+            return Fraction(str(value))
+        except ValueError:
+            return Fraction(value)
+    return Fraction(str(value))
 
 
 def clean_token(text: str) -> str:
@@ -189,8 +215,8 @@ def load_words(path: Path) -> list[Word]:
     words = []
     for i, raw in enumerate(data.get("words") or []):
         text = raw.get("text") or ""
-        start = (raw.get("start") or 0) / 1000
-        end = (raw.get("end") or raw.get("start") or 0) / 1000
+        start = to_fraction(raw.get("start") or 0) / 1000
+        end = to_fraction(raw.get("end") or raw.get("start") or 0) / 1000
         words.append(Word(i, text, clean_token(text), start, end))
     return words
 
@@ -342,8 +368,8 @@ def apply_extra_cuts(words: list[Word], path: Path | None, min_confidence: str) 
         confidence = str(cut.get("confidence", "high")).lower()
         if rank.get(confidence, 2) < threshold:
             continue
-        start = float(cut["start"])
-        end = float(cut["end"])
+        start = to_fraction(cut["start"])
+        end = to_fraction(cut["end"])
         reason = f"llm-{confidence}"
         mark_time_range(words, start, end, reason)
 
@@ -531,7 +557,7 @@ def mark_segment_removals(words: list[Word], segments: list[Segment]) -> None:
             i -= 1
 
 
-def kept_ranges(words: list[Word], pad: float, min_gap: float) -> list[dict]:
+def kept_ranges(words: list[Word], pad: Fraction, min_gap: Fraction) -> list[dict]:
     ranges = []
     active = None
     for word in words:
@@ -540,7 +566,7 @@ def kept_ranges(words: list[Word], pad: float, min_gap: float) -> list[dict]:
                 ranges.append(active)
                 active = None
             continue
-        start = max(0.0, word.start - pad)
+        start = max(Fraction(0), word.start - pad)
         end = word.end + pad
         if active and start - active["end"] <= min_gap:
             active["end"] = max(active["end"], end)
@@ -557,10 +583,10 @@ def kept_ranges(words: list[Word], pad: float, min_gap: float) -> list[dict]:
 
 def phrase_kept_ranges(
     words: list[Word],
-    head_pad: float,
-    tail_pad: float,
-    keep_pause: float,
-    min_range_duration: float,
+    head_pad: Fraction,
+    tail_pad: Fraction,
+    keep_pause: Fraction,
+    min_range_duration: Fraction,
 ) -> list[dict]:
     """Build editor-friendly phrase ranges instead of cutting every word gap.
 
@@ -616,20 +642,20 @@ def phrase_kept_ranges(
 
     padded = []
     for r in ranges:
-        start = max(0.0, r["speech_start"] - head_pad)
+        start = max(Fraction(0), r["speech_start"] - head_pad)
         end = r["speech_end"] + tail_pad
 
         prev_i = r["first_word"] - 1
         while prev_i >= 0 and not words[prev_i].clean:
             prev_i -= 1
         if prev_i >= 0 and words[prev_i].remove and words[prev_i].reason in SERIOUS_CUT_REASONS:
-            start = max(start, words[prev_i].end + 0.02)
+            start = max(start, words[prev_i].end + MIN_SEPARATION)
 
         next_i = r["last_word"] + 1
         while next_i < len(words) and not words[next_i].clean:
             next_i += 1
         if next_i < len(words) and words[next_i].remove and words[next_i].reason in SERIOUS_CUT_REASONS:
-            end = min(end, max(r["speech_end"], words[next_i].start - 0.02))
+            end = min(end, max(r["speech_end"], words[next_i].start - MIN_SEPARATION))
 
         out = dict(r)
         out["start"] = start
@@ -645,49 +671,173 @@ def phrase_kept_ranges(
     return [r for r in padded if r["end"] - r["start"] >= min_range_duration]
 
 
-def fmt_time(seconds: float, fps: int = 24) -> str:
-    frames = max(0, round(seconds * fps))
-    return f"{frames}/{fps}s"
+# Minimum gap (seconds) kept between a kept range and a seriously-cut neighbor.
+MIN_SEPARATION = Fraction(1, 50)
+
+# Common decimal spellings of NTSC-style rates. These are display aliases: the
+# rates NLEs actually use are the exact rationals 24000/1001, 30000/1001, etc.
+# Any other decimal (e.g. "25.5") is parsed as its exact decimal rational.
+FPS_ALIASES = {
+    "23.976": Fraction(24000, 1001),
+    "23.98": Fraction(24000, 1001),
+    "24.975": Fraction(25000, 1001),
+    "29.97": Fraction(30000, 1001),
+    "47.952": Fraction(48000, 1001),
+    "59.94": Fraction(60000, 1001),
+    "119.88": Fraction(120000, 1001),
+}
 
 
-def fmt_offset(seconds: float) -> str:
-    # FCPXML likes rational frame offsets for video timing.
-    return fmt_time(seconds)
+def parse_fps(value: str) -> Fraction:
+    """Parse a CLI frame rate into an exact Fraction.
+
+    Accepts integers ("25"), rational numerator/denominator strings
+    ("24000/1001", the form ffprobe reports for r_frame_rate), and decimal
+    aliases ("23.976" -> 24000/1001, "29.97" -> 30000/1001).
+    """
+    text = str(value).strip()
+    if text in FPS_ALIASES:
+        return FPS_ALIASES[text]
+    try:
+        fps = Fraction(text)
+    except (ValueError, ZeroDivisionError) as exc:
+        raise argparse.ArgumentTypeError(f"invalid frame rate: {value!r}") from exc
+    if fps <= 0:
+        raise argparse.ArgumentTypeError(f"frame rate must be positive: {value!r}")
+    return fps
+
+
+def parse_fraction(value: str) -> Fraction:
+    """Parse a CLI numeric argument (seconds) as an exact Fraction."""
+    try:
+        parsed = Fraction(str(value).strip())
+    except (ValueError, ZeroDivisionError) as exc:
+        raise argparse.ArgumentTypeError(f"invalid number: {value!r}") from exc
+    return parsed
+
+
+def format_rate_token(fps: Fraction) -> str:
+    """Rate token used in FCPXML format names (e.g. FFVideoFormat1080p2398)."""
+    tokens = {
+        Fraction(24000, 1001): "2398",
+        Fraction(30000, 1001): "2997",
+        Fraction(60000, 1001): "5994",
+        Fraction(120000, 1001): "11988",
+    }
+    if fps in tokens:
+        return tokens[fps]
+    if fps.denominator == 1:
+        return str(fps.numerator)
+    return f"{fps.numerator}x{fps.denominator}"
+
+
+def frame_duration_token(fps: Fraction) -> str:
+    """FCPXML <format> frameDuration: the exact inverse of the frame rate."""
+    inverse = 1 / fps
+    return f"{inverse.numerator}/{inverse.denominator}s"
+
+
+def format_rational_time(frames: int, fps: Fraction) -> str:
+    """Render an exact frame count as an FCPXML rational time.
+
+    Integer rates render as "frames/rate s" (e.g. "48/24s"). Non-integer rates
+    render as a nested fraction "frames/num/den s" (e.g. "33/30000/1001s"),
+    which FCPXML defines as (frames/num)/den seconds — the standard way NTSC
+    rates are expressed without rounding to a float.
+    """
+    frames = max(0, int(frames))
+    if fps.denominator == 1:
+        return f"{frames}/{fps.numerator}s"
+    return f"{frames}/{fps.numerator}/{fps.denominator}s"
+
+
+def fmt_time(seconds: float | Fraction | int, fps: float | Fraction | int = 24) -> str:
+    """Project a duration/position onto the exact frame grid and format it."""
+    rate = Fraction(fps)
+    frames = round(to_fraction(seconds) * rate)
+    return format_rational_time(frames, rate)
+
+
+def fmt_offset(seconds: float | Fraction | int, fps: Fraction | int) -> str:
+    # FCPXML likes rational frame offsets for video timing. The frame rate MUST
+    # be forwarded here: offsets live on the timeline's own frame grid, and
+    # silently falling back to the 24 fps default was the original bug.
+    return fmt_time(seconds, fps)
+
+
+def fmt_timecode_origin(seconds: Fraction, fps: Fraction) -> str:
+    """Render an absolute timecode origin (asset start / sequence tcStart).
+
+    Zero stays the bare "0s" the artifacts always used; nonzero origins render
+    on the exact frame grid.
+    """
+    if seconds == 0:
+        return "0s"
+    return fmt_time(seconds, fps)
+
+
+# NDF timecode is a pure frame counter displayed at the nominal integer rate
+# (24 for 24000/1001, 30 for 30000/1001). Drop-frame counting only re-labels
+# frame numbers to track wall clock at 29.97/59.94; it never drops actual
+# frames and is undefined at 24000/1001. Every artifact this script writes is
+# frame-count based and declares NDF (FCPXML tcFormat="NDF", EDL "FCM:
+# NON-DROP FRAME"), so decomposing with the nominal rate is exact and
+# unambiguous at all supported rates. If a broadcast DF deliverable is ever
+# needed, that is a localized change to write_edl()'s FCM line and separator
+# plus tcFormat — the timeline math does not change.
+def nominal_fps(fps: Fraction) -> int:
+    return max(1, int(round(fps)))
+
+
+def seconds_to_ndf_timecode(seconds: Fraction, fps: Fraction) -> str:
+    frames = max(0, round(to_fraction(seconds) * fps))
+    nominal = nominal_fps(fps)
+    hh, frames = divmod(frames, nominal * 3600)
+    mm, frames = divmod(frames, nominal * 60)
+    ss, ff = divmod(frames, nominal)
+    return f"{hh:02d}:{mm:02d}:{ss:02d}:{ff:02d}"
 
 
 def write_fcpxml(
     path: Path,
     source: Path,
     ranges: list[dict],
-    duration: float,
+    duration: Fraction,
     width: int,
     height: int,
-    fps: int,
+    fps: Fraction,
     audio_channels: int,
+    source_start: Fraction = Fraction(0),
+    sequence_origin: Fraction = Fraction(0),
 ) -> None:
     src_uri = source.resolve().as_uri()
-    total_timeline = sum(r["end"] - r["start"] for r in ranges)
+    total_timeline = sum((r["end"] - r["start"] for r in ranges), Fraction(0))
     lines = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<!DOCTYPE fcpxml>',
         '<fcpxml version="1.10">',
         '  <resources>',
-        f'    <format id="r1" name="FFVideoFormat{height}p{fps}" frameDuration="1/{fps}s" width="{width}" height="{height}" colorSpace="1-1-1 (Rec. 709)"/>',
-        f'    <asset id="r2" name="{html.escape(source.name)}" start="0s" duration="{fmt_time(duration, fps)}" hasVideo="1" hasAudio="1" audioSources="1" audioChannels="{audio_channels}" format="r1">',
+        f'    <format id="r1" name="FFVideoFormat{height}p{format_rate_token(fps)}" frameDuration="{frame_duration_token(fps)}" width="{width}" height="{height}" colorSpace="1-1-1 (Rec. 709)"/>',
+        f'    <asset id="r2" name="{html.escape(source.name)}" start="{fmt_timecode_origin(source_start, fps)}" duration="{fmt_time(duration, fps)}" hasVideo="1" hasAudio="1" audioSources="1" audioChannels="{audio_channels}" format="r1">',
         f'      <media-rep kind="original-media" src="{html.escape(src_uri)}"/>',
         "    </asset>",
         "  </resources>",
         '  <library location="file:///Users/jonathanedwards/Movies/">',
         '    <event name="Radio Edit Prototype">',
         f'      <project name="{html.escape(source.stem)} Radio Edit">',
-        f'        <sequence format="r1" duration="{fmt_time(total_timeline, fps)}" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">',
+        f'        <sequence format="r1" duration="{fmt_time(total_timeline, fps)}" tcStart="{fmt_timecode_origin(sequence_origin, fps)}" tcFormat="NDF" audioLayout="stereo" audioRate="48k">',
         "          <spine>",
     ]
-    timeline_offset = 0.0
+    timeline_offset = Fraction(0)
     for idx, r in enumerate(ranges, 1):
         dur = r["end"] - r["start"]
+        # Asset-clip `start` stays media-elapsed (offset from the first frame
+        # of the file); the asset's own `start` attribute above declares the
+        # media's timecode origin to the NLE. EDL FROM timecodes carry the
+        # source_start explicitly instead. Confirm both behaviors during the
+        # real Resolve/Premiere import pass (NAT-2989 step 5).
         lines.append(
-            f'            <asset-clip name="cut_{idx:04d}" ref="r2" offset="{fmt_offset(timeline_offset)}" start="{fmt_time(r["start"], fps)}" duration="{fmt_time(dur, fps)}" tcFormat="NDF"/>'
+            f'            <asset-clip name="cut_{idx:04d}" ref="r2" offset="{fmt_offset(timeline_offset, fps)}" start="{fmt_time(r["start"], fps)}" duration="{fmt_time(dur, fps)}" tcFormat="NDF"/>'
         )
         timeline_offset += dur
     lines += [
@@ -702,24 +852,23 @@ def write_fcpxml(
     path.write_text("\n".join(lines))
 
 
-def write_edl(path: Path, source: Path, ranges: list[dict], fps: int) -> None:
-    def tc(seconds: float) -> str:
-        frames = round(seconds * fps)
-        hh = frames // (fps * 3600)
-        frames %= fps * 3600
-        mm = frames // (fps * 60)
-        frames %= fps * 60
-        ss = frames // fps
-        ff = frames % fps
-        return f"{hh:02d}:{mm:02d}:{ss:02d}:{ff:02d}"
-
+def write_edl(
+    path: Path,
+    source: Path,
+    ranges: list[dict],
+    fps: Fraction,
+    source_start: Fraction = Fraction(0),
+    sequence_origin: Fraction = Fraction(0),
+) -> None:
     out = ["TITLE: RADIO_EDIT_PROTOTYPE", "FCM: NON-DROP FRAME", ""]
-    timeline = 0.0
+    timeline = Fraction(0)
     reel = re.sub(r"[^A-Z0-9]", "", source.stem.upper())[:8] or "SOURCE"
     for idx, r in enumerate(ranges, 1):
         dur = r["end"] - r["start"]
+        # FROM/TO are absolute source timecodes, so a nonzero media TC start
+        # shifts them; record timecodes shift by the sequence origin.
         out.append(
-            f"{idx:03d}  {reel:<8} V     C        {tc(r['start'])} {tc(r['end'])} {tc(timeline)} {tc(timeline + dur)}"
+            f"{idx:03d}  {reel:<8} V     C        {seconds_to_ndf_timecode(source_start + r['start'], fps)} {seconds_to_ndf_timecode(source_start + r['end'], fps)} {seconds_to_ndf_timecode(sequence_origin + timeline, fps)} {seconds_to_ndf_timecode(sequence_origin + timeline + dur, fps)}"
         )
         out.append(f"* FROM CLIP NAME: {source.name}")
         out.append("")
@@ -727,17 +876,22 @@ def write_edl(path: Path, source: Path, ranges: list[dict], fps: int) -> None:
     path.write_text("\n".join(out))
 
 
-def write_decisions(path: Path, words: list[Word], ranges: list[dict], original_duration: float) -> None:
+def json_default(value: object) -> object:
+    if isinstance(value, Fraction):
+        return float(value)
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+
+
+def write_decisions(path: Path, words: list[Word], ranges: list[dict], original_duration: Fraction) -> None:
     removed = [w for w in words if w.remove]
     reason_counts = {}
     for word in removed:
         reason_counts[word.reason] = reason_counts.get(word.reason, 0) + 1
+    edited = sum((r["end"] - r["start"] for r in ranges), Fraction(0))
     data = {
-        "original_duration_seconds": original_duration,
-        "edited_duration_seconds": sum(r["end"] - r["start"] for r in ranges),
-        "reduction_percent": round(
-            100 * (1 - (sum(r["end"] - r["start"] for r in ranges) / original_duration)), 2
-        ),
+        "original_duration_seconds": float(original_duration),
+        "edited_duration_seconds": float(edited),
+        "reduction_percent": float(round(100 * (1 - edited / original_duration), 2)) if original_duration else 0.0,
         "source_word_count": len(words),
         "removed_word_count": len(removed),
         "kept_word_count": len(words) - len(removed),
@@ -747,14 +901,14 @@ def write_decisions(path: Path, words: list[Word], ranges: list[dict], original_
             {
                 "index": w.index,
                 "text": w.text,
-                "start": w.start,
-                "end": w.end,
+                "start": float(w.start),
+                "end": float(w.end),
                 "reason": w.reason,
             }
             for w in removed
         ],
     }
-    path.write_text(json.dumps(data, indent=2))
+    path.write_text(json.dumps(data, indent=2, default=json_default))
 
 
 def write_csv(path: Path, ranges: list[dict]) -> None:
@@ -765,9 +919,9 @@ def write_csv(path: Path, ranges: list[dict]) -> None:
             writer.writerow(
                 [
                     idx,
-                    f"{r['start']:.3f}",
-                    f"{r['end']:.3f}",
-                    f"{r['end'] - r['start']:.3f}",
+                    f"{float(r['start']):.3f}",
+                    f"{float(r['end']):.3f}",
+                    f"{float(r['end'] - r['start']):.3f}",
                     r["first_word"],
                     r["last_word"],
                     " ".join(r["text"])[:180],
@@ -775,23 +929,142 @@ def write_csv(path: Path, ranges: list[dict]) -> None:
             )
 
 
+# Caption block shaping. Cues break on timeline gaps, sentence-ending words,
+# and these caps so blocks stay short and readable in an NLE.
+CAPTION_MAX_CHARS = 84
+CAPTION_MAX_DURATION = Fraction(5)
+CAPTION_GAP_BREAK = Fraction(1)
+
+
+def build_caption_cues(ranges: list[dict], words: list[Word]) -> list[dict]:
+    """Map kept words onto the edited timeline — the one canonical mapping.
+
+    Every range's words are shifted by the same cumulative timeline offsets the
+    FCPXML asset-clip offsets use, so captions always match the cut. Words
+    removed for light reasons (filler, weak-start, ...) are part of the phrase
+    timeline and stay; seriously-cut words are not part of any range.
+    """
+    cues: list[dict] = []
+    current: dict | None = None
+    timeline_offset = Fraction(0)
+
+    def flush() -> None:
+        nonlocal current
+        if current and current["words"]:
+            cues.append(current)
+        current = None
+
+    for r in ranges:
+        range_start = r["start"]
+        range_end = r["end"]
+        range_dur = range_end - range_start
+        for wi in range(int(r["first_word"]), int(r["last_word"]) + 1):
+            word = words[wi]
+            if not word.clean or (word.remove and word.reason in SERIOUS_CUT_REASONS):
+                continue
+            # Clamp each word into its range, then slide it to the timeline.
+            src_start = min(max(word.start, range_start), range_end)
+            src_end = min(max(word.end, range_start), range_end)
+            tl_start = timeline_offset + (src_start - range_start)
+            tl_end = timeline_offset + (src_end - range_start)
+            if current and (
+                tl_start - current["end"] > CAPTION_GAP_BREAK
+                or tl_end - current["start"] > CAPTION_MAX_DURATION
+                or len(" ".join(current["words"])) + 1 + len(word.text) > CAPTION_MAX_CHARS
+                or current["words"][-1].endswith((".", "!", "?"))
+            ):
+                flush()
+            if current is None:
+                current = {"start": tl_start, "end": tl_end, "words": [word.text]}
+            else:
+                current["start"] = min(current["start"], tl_start)
+                current["end"] = max(current["end"], tl_end)
+                current["words"].append(word.text)
+        timeline_offset += range_dur
+    flush()
+    return cues
+
+
+def project_cues_to_frames(cues: list[dict], fps: Fraction) -> list[dict]:
+    """Project cue times onto the exact frame grid: start=floor, end=ceil.
+
+    Bounds guarantees after projection: no negative times, end > start (a
+    collapsed cue grows to one frame), and cues never overlap (a cue starting
+    inside the previous one is pushed to its end).
+    """
+    projected = []
+    prev_end_frame = 0
+    for cue in cues:
+        start_frame = max(0, math.floor(cue["start"] * fps))
+        end_frame = math.ceil(cue["end"] * fps)
+        if start_frame < prev_end_frame:
+            start_frame = prev_end_frame
+        if end_frame <= start_frame:
+            end_frame = start_frame + 1
+        projected.append({"start_frame": start_frame, "end_frame": end_frame, "text": " ".join(cue["words"])})
+        prev_end_frame = end_frame
+    return projected
+
+
+def srt_timestamp(ms: int) -> str:
+    hh, rem = divmod(ms, 3_600_000)
+    mm, rem = divmod(rem, 60_000)
+    ss, mmm = divmod(rem, 1000)
+    return f"{hh:02d}:{mm:02d}:{ss:02d},{mmm:03d}"
+
+
+def frame_to_ms(frame: int, fps: Fraction) -> int:
+    # SRT only has millisecond precision, so exact frame boundaries are rounded
+    # to the nearest ms (deterministic rational rounding, no float math).
+    return max(0, round(Fraction(frame) / fps * 1000))
+
+
+def write_srt(path: Path, ranges: list[dict], words: list[Word], fps: Fraction) -> None:
+    cues = project_cues_to_frames(build_caption_cues(ranges, words), fps)
+    blocks = []
+    for idx, cue in enumerate(cues, 1):
+        start_ms = frame_to_ms(cue["start_frame"], fps)
+        end_ms = frame_to_ms(cue["end_frame"], fps)
+        if end_ms <= start_ms:
+            end_ms = start_ms + 1
+        blocks.append(f"{idx}\n{srt_timestamp(start_ms)} --> {srt_timestamp(end_ms)}\n{cue['text']}\n")
+    path.write_text("\n".join(blocks))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--transcript", required=True, type=Path)
     parser.add_argument("--source", required=True, type=Path)
     parser.add_argument("--out-dir", required=True, type=Path)
-    parser.add_argument("--fps", type=int, default=24)
+    parser.add_argument(
+        "--fps",
+        type=parse_fps,
+        default=Fraction(24),
+        help="frame rate: integer (25), exact rational (24000/1001), or decimal alias (23.976, 29.97)",
+    )
     parser.add_argument("--width", type=int, default=1920)
     parser.add_argument("--height", type=int, default=1080)
     parser.add_argument("--audio-channels", type=int, default=1)
-    parser.add_argument("--duration", type=float, required=True)
-    parser.add_argument("--pad", type=float, default=0.035)
-    parser.add_argument("--merge-gap", type=float, default=0.18)
+    parser.add_argument("--duration", type=parse_fraction, required=True)
+    parser.add_argument("--pad", type=parse_fraction, default=Fraction(35, 1000))
+    parser.add_argument("--merge-gap", type=parse_fraction, default=Fraction(18, 100))
     parser.add_argument("--mode", choices=["word", "phrase"], default="phrase")
-    parser.add_argument("--head-pad", type=float, default=0.22)
-    parser.add_argument("--tail-pad", type=float, default=0.38)
-    parser.add_argument("--keep-pause", type=float, default=1.15)
-    parser.add_argument("--min-range-duration", type=float, default=0.45)
+    parser.add_argument("--head-pad", type=parse_fraction, default=Fraction(22, 100))
+    parser.add_argument("--tail-pad", type=parse_fraction, default=Fraction(38, 100))
+    parser.add_argument("--keep-pause", type=parse_fraction, default=Fraction(115, 100))
+    parser.add_argument("--min-range-duration", type=parse_fraction, default=Fraction(45, 100))
+    parser.add_argument(
+        "--source-start",
+        type=parse_fraction,
+        default=Fraction(0),
+        help="source media timecode origin in seconds (e.g. 3600 for 01:00:00:00)",
+    )
+    parser.add_argument(
+        "--sequence-origin",
+        type=parse_fraction,
+        default=Fraction(0),
+        help="edited sequence timecode origin in seconds",
+    )
     parser.add_argument("--suffix", default="_radio_edit_v2")
     parser.add_argument("--extra-cuts", type=Path)
     parser.add_argument("--extra-cut-confidence", choices=["medium", "high"], default="high")
@@ -822,6 +1095,7 @@ def main() -> None:
     edl = args.out_dir / f"{base}{args.suffix}.edl"
     decisions = args.out_dir / f"{base}{args.suffix}_decisions.json"
     csv_path = args.out_dir / f"{base}{args.suffix}_cuts.csv"
+    srt = args.out_dir / f"{base}{args.suffix}_captions.srt"
 
     write_fcpxml(
         fcpxml,
@@ -832,11 +1106,15 @@ def main() -> None:
         args.height,
         args.fps,
         args.audio_channels,
+        args.source_start,
+        args.sequence_origin,
     )
-    write_edl(edl, args.source, ranges, args.fps)
+    write_edl(edl, args.source, ranges, args.fps, args.source_start, args.sequence_origin)
     write_decisions(decisions, words, ranges, args.duration)
     write_csv(csv_path, ranges)
+    write_srt(srt, ranges, words, args.fps)
 
+    edited = sum((r["end"] - r["start"] for r in ranges), Fraction(0))
     print(
         json.dumps(
             {
@@ -844,13 +1122,13 @@ def main() -> None:
                 "edl": str(edl),
                 "decisions": str(decisions),
                 "csv": str(csv_path),
+                "srt": str(srt),
                 "cuts": len(ranges),
                 "mode": args.mode,
-                "original_duration_seconds": args.duration,
-                "edited_duration_seconds": sum(r["end"] - r["start"] for r in ranges),
-                "reduction_percent": round(
-                    100 * (1 - (sum(r["end"] - r["start"] for r in ranges) / args.duration)), 2
-                ),
+                "fps": f"{args.fps.numerator}/{args.fps.denominator}" if args.fps.denominator != 1 else args.fps.numerator,
+                "original_duration_seconds": float(args.duration),
+                "edited_duration_seconds": float(edited),
+                "reduction_percent": float(round(100 * (1 - edited / args.duration), 2)) if args.duration else 0.0,
             },
             indent=2,
         )
