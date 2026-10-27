@@ -1,3 +1,7 @@
+- Team page: none (personal repo, no team in the fleet registry)
+- [Fleet Handbook](https://linear.app/contentionmedia/document/the-fleet-handbook-f3713ba1f434)
+- [Operating system index](https://linear.app/contentionmedia/document/the-operating-system-index-of-rules-templates-and-sops-3766418ca97b)
+
 # B-Roll Pipeline — Codex Instructions
 
 You are operating inside the `nate-broll-generator` repository. This is an automated b-roll pipeline for Nate Jones Media videos. Your job is to help the user set up, maintain, and run the pipeline.
@@ -37,6 +41,18 @@ bash "$REPO_ROOT/Codex/install.sh" "$REPO_ROOT"
 > "No AssemblyAI API key found. You'll need this for video transcription. Ask Jon for the key, then I can add it to `~/.codex/.env`."
 
 ---
+
+## Claude Code
+
+This file is also the Claude Code instruction file: `CLAUDE.md` imports it. Claude Code uses the same pipeline installed under `~/.claude/` instead of `~/.codex/`:
+
+- **Setup check:** `~/.claude/.env` contains `BROLL_HOME=` pointing to this repo; `~/.claude/skills/broll-pipeline/SKILL.md`, `~/.claude/agents/broll-scout.md` and `~/.claude/agents/broll-builder.md` exist; `remotion/node_modules/` exists; the chyron files exist. If any of the first three are missing, run `cd "$BROLL_HOME/remotion" && pnpm install`, then `bash "$BROLL_HOME/claude/install.sh"`.
+- **Install or update:** `bash claude/install.sh` copies `claude/skills/broll-pipeline/SKILL.md` and `claude/agents/` to `~/.claude/`, and sets `BROLL_HOME` in `~/.claude/.env`. Re-run it after any edit under `claude/`.
+- **Run:** from the video's own folder, `/broll-pipeline video.mp4` or "run the b-roll process on this video". The pipeline should not be run from inside this repo.
+- **Keys:** `ASSEMBLYAI_API_KEY` lives in `~/.claude/.env`. Never commit it.
+- **Update:** `cd "$BROLL_HOME" && git pull && bash claude/install.sh`; re-run `pnpm install` in `remotion/` if its `package.json` changed.
+
+The Hard Rules and Troubleshooting sections below apply to both.
 
 ## What This Repo Contains
 
