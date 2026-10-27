@@ -46,11 +46,14 @@ bash "$REPO_ROOT/Codex/install.sh" "$REPO_ROOT"
 
 This file is also the Claude Code instruction file: `CLAUDE.md` imports it. Claude Code uses the same pipeline installed under `~/.claude/` instead of `~/.codex/`:
 
-- **Setup check:** `~/.claude/.env` contains `BROLL_HOME=` pointing to this repo; `~/.claude/skills/broll-pipeline/SKILL.md`, `~/.claude/agents/broll-scout.md` and `~/.claude/agents/broll-builder.md` exist; `remotion/node_modules/` exists; the chyron files exist. If any of the first three are missing, run `cd "$BROLL_HOME/remotion" && pnpm install`, then `bash "$BROLL_HOME/claude/install.sh"`.
+- **Setup check** (on a first open in Claude Code, check proactively): `~/.claude/.env` contains `BROLL_HOME=` pointing to this repo; `~/.claude/skills/broll-pipeline/SKILL.md`, `~/.claude/agents/broll-scout.md` and `~/.claude/agents/broll-builder.md` exist; `remotion/node_modules/` exists; the chyron files exist. If any of the env file, the skill, the agents or `remotion/node_modules/` are missing, run `cd "$BROLL_HOME/remotion" && pnpm install`, then `bash "$BROLL_HOME/claude/install.sh"`.
 - **Install or update:** `bash claude/install.sh` copies `claude/skills/broll-pipeline/SKILL.md` and `claude/agents/` to `~/.claude/`, and sets `BROLL_HOME` in `~/.claude/.env`. Re-run it after any edit under `claude/`.
 - **Run:** from the video's own folder, `/broll-pipeline video.mp4` or "run the b-roll process on this video". The pipeline should not be run from inside this repo.
 - **Keys:** `ASSEMBLYAI_API_KEY` lives in `~/.claude/.env`. Never commit it.
 - **Update:** `cd "$BROLL_HOME" && git pull && bash claude/install.sh`; re-run `pnpm install` in `remotion/` if its `package.json` changed.
+
+**If `ASSEMBLYAI_API_KEY` is not in `~/.claude/.env`**, inform the user:
+> "No AssemblyAI API key found. You'll need this for video transcription. Ask Jon for the key, then I can add it to `~/.claude/.env`."
 
 The Hard Rules and Troubleshooting sections below apply to both.
 
@@ -72,7 +75,11 @@ Codex/                    Codex configuration source files
   agents/broll-builder.md           Builder prompt wrapper
   install.sh                        Copies config to ~/.codex/ and wires shell env
 
-claude/                    Canonical legacy prompt files reused by the Codex skill
+claude/                    Claude Code configuration source files; the Codex skill also reuses its legacy prompts
+  skills/broll-pipeline/SKILL.md    Pipeline orchestration skill
+  agents/broll-scout.md             Moment selection agent
+  agents/broll-builder.md           Component generation agent
+  install.sh                        Copies config to ~/.claude/
 
 scripts/                   Python automation
   multi_composite.py       FFmpeg dual-output compositing + chyrons
@@ -92,6 +99,8 @@ docs/                      Human-readable documentation
 ## Key Environment Variable
 
 `BROLL_HOME` — absolute path to this repository's root. Stored in `~/.codex/.env`. The install script also adds a small zsh hook so new shells load it automatically.
+
+For Claude Code, it is stored in `~/.claude/.env`. All paths in the skill, agents, and Python scripts reference this variable. The install script sets it automatically.
 
 ---
 
@@ -237,6 +246,9 @@ After builder agents create component files, add them to `src/Root.tsx`:
 | Chyron files missing | Download from Jon's shared link into `assets/` |
 | Logo renders as white box | Check slug in `remotion/public/logos/aliases.json` |
 | Permission denied on scripts | Run `chmod +x setup.sh Codex/install.sh` |
+| `BROLL_HOME` not set (Claude Code) | Run `bash claude/install.sh` |
+| Skill not found in Claude | Run `bash claude/install.sh` |
+| Permission denied on scripts (Claude Code) | Run `chmod +x setup.sh claude/install.sh` |
 
 ---
 
