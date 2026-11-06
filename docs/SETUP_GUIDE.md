@@ -43,7 +43,7 @@ brew --version
 
 ```bash
 brew install node ffmpeg git
-npm install -g pnpm
+npm install -g pnpm@10.31.0
 ```
 
 Verify:
@@ -52,11 +52,15 @@ Verify:
 node --version
 pnpm --version
 ffmpeg -version | head -1
+ffprobe -version | head -1
 git --version
 python3 --version
 ```
 
-Node should be v20 or newer.
+Node should be v20 or newer. The pnpm version matches the `packageManager`
+field in `remotion/package.json`; check that field when updating the toolchain.
+See the [pnpm installation reference](https://pnpm.io/installation) for other
+installation methods.
 
 ## 4. Clone The Repo
 
@@ -90,7 +94,31 @@ What this does:
 - asks for the AssemblyAI API key if missing
 - runs a TypeScript check
 
-If the script asks for the AssemblyAI API key, paste the key from Jon.
+If the script asks for the AssemblyAI API key, paste the key from Jon. You can
+press Enter to skip it for the [local setup checks](LOCAL_CHECKS.md); transcription
+still needs a key before processing real video.
+
+Setup modifies your operator configuration: it writes `~/.codex/.env`, copies
+repo-owned skills and prompts, replaces the repo plugin, and adds a marked hook
+to `~/.zprofile` and `~/.zshrc`. Existing skill and agent files receive `.bak`
+copies; this is not a full backup of your Codex configuration.
+
+Load the generated environment into your current Bash or zsh session:
+
+```bash
+set -a
+. "$HOME/.codex/.env"
+set +a
+printf '%s\n' "$BROLL_HOME"
+```
+
+The path should match your clone. The installer cannot export variables into
+the shell that launched it. New zsh sessions load the hook automatically.
+
+Run the [local setup checks](LOCAL_CHECKS.md) now. The setup script prints a
+warning if TypeScript fails and can still print `Setup Complete!`; use the
+explicit TypeScript command in those checks to verify compilation. These checks
+can run before downloading chyrons or configuring delivery.
 
 ## 6. Add CMP Upload Credentials
 
@@ -139,7 +167,11 @@ From the repo root:
 ./scripts/package_check.sh
 ```
 
-This verifies the local install, required files, Codex skill files, chyrons, and TypeScript.
+This is the full editor-package check: it expects the AssemblyAI configuration,
+installed Codex files and both branded chyrons, and includes a CMP uploader smoke
+test. It is not the key-free local check. Use the explicit TypeScript check in
+[local setup checks](LOCAL_CHECKS.md) as well; a package-check summary alone is
+not proof of a successful render or production delivery.
 
 ## 9. Render Template Previews
 
@@ -149,7 +181,8 @@ This is the simplest visual smoke test:
 ./scripts/render_template_previews.sh
 ```
 
-It renders still previews for the approved template menu into:
+This step launches the renderer, so run it after the local checks on the
+editor workstation. It renders still previews for the approved template menu into:
 
 ```text
 remotion/out/template-previews/

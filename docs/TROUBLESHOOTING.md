@@ -19,11 +19,18 @@ Use $broll-pipeline on video.mp4
 
 **Symptom:** `pnpm exec tsc --noEmit` shows errors.
 
-**Fix:** Filter errors by the batch prefix you just built:
+**Fix:** Run the complete check from the Remotion directory:
+
 ```bash
-cd $BROLL_HOME/remotion
-pnpm exec tsc --noEmit 2>&1 | grep "XX_Clips"
+cd "$BROLL_HOME/remotion"
+pnpm install --frozen-lockfile --child-concurrency=2
+pnpm exec tsc --noEmit
 ```
+
+Read all diagnostics. Filtering by one batch prefix can hide errors in shared
+files. `setup.sh` can print `Setup Complete!` after a failed TypeScript check;
+the explicit command must exit zero. See [local setup checks](LOCAL_CHECKS.md)
+for the full provider-free verification sequence.
 
 Common TS errors:
 | Error | Fix |
@@ -50,12 +57,20 @@ If missing, download from the shared link.
 
 **Symptom:** Transcription API returns errors.
 
-**Fix:** Check the API key:
+**Fix:** Check whether the trusted local configuration contains a nonempty key
+without printing its value:
+
 ```bash
-grep ASSEMBLYAI ~/.codex/.env
+if ( . "$HOME/.codex/.env"; test -n "${ASSEMBLYAI_API_KEY:-}" ); then
+  echo "AssemblyAI key is set"
+else
+  echo "AssemblyAI key is missing or empty"
+fi
 ```
 
-If empty or wrong, update it:
+A present key can still be invalid; use the API error to distinguish an
+authentication failure from another transcription error. If empty or wrong,
+update it:
 ```bash
 # Edit ~/.codex/.env and set:
 ASSEMBLYAI_API_KEY=your_actual_key_here
@@ -138,16 +153,24 @@ If still failing, check Node version: `node --version` (need 20+).
 
 **Symptom:** Codex can't find the Remotion project or scripts.
 
-**Fix:** Re-run the install script:
+**Fix:** From the repository root, install or refresh the configuration:
+
 ```bash
-cd /path/to/nate-broll-generator
-./setup.sh codex
+bash Codex/install.sh
 ```
 
-Or manually add to `~/.codex/.env`:
+Then load it into your current Bash or zsh session:
+
+```bash
+set -a
+. "$HOME/.codex/.env"
+set +a
+printf '%s\n' "$BROLL_HOME"
 ```
-BROLL_HOME=/path/to/nate-broll-generator
-```
+
+The printed path should be your clone. New zsh sessions load the installed hook
+automatically. Bash sessions need the explicit load. Running the installer as a
+child process does not change the parent shell's environment.
 
 ## Codex skill not available
 
@@ -166,7 +189,13 @@ Then restart Codex or open a fresh session.
 
 **Symptom:** `./scripts/package_check.sh` reports missing files.
 
-**Fix:** Follow the reported item. The most common failures are:
+**Fix:** If you are checking tools before configuring an editor workstation,
+use [local setup checks](LOCAL_CHECKS.md). That procedure needs no API key or
+branded assets. The full package check expects them and includes CMP upload
+checks. A TypeScript failure now makes that command exit nonzero; read
+`/tmp/nate-broll-tsc.log` for its diagnostics.
+
+For a full editor package, follow the reported item. The most common failures are:
 
 - missing `assets/Youtube Chyron.mov`
 - missing `assets/Substack Chyron.mov`
