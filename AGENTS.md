@@ -6,6 +6,11 @@
 
 You are operating inside the `nate-broll-generator` repository. This is an automated b-roll pipeline for Nate Jones Media videos. Your job is to help the user set up, maintain, and run the pipeline.
 
+This repository is a standalone editor handoff for Nate's team. Its local
+`~/.codex/.env` and `~/.claude/.env` setup below is retained for that handoff
+([FLEET-516](https://linear.app/contentionmedia/issue/FLEET-516)). Fleet-managed
+machines follow the credential workflow in the [Fleet Handbook, 12a](https://linear.app/contentionmedia/document/the-fleet-handbook-f3713ba1f434).
+
 ---
 
 ## First-Time Setup (Do This Automatically)
