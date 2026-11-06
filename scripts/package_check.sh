@@ -147,14 +147,13 @@ else
   fail "remotion/node_modules missing; run ./setup.sh codex"
 fi
 
-(
-  cd "$REPO_ROOT/remotion"
-  if pnpm exec tsc --noEmit >/tmp/nate-broll-tsc.log 2>&1; then
-    ok "TypeScript compiles"
-  else
-    fail "TypeScript compile failed; see /tmp/nate-broll-tsc.log"
-  fi
-)
+if (
+  cd "$REPO_ROOT/remotion" && pnpm exec tsc --noEmit
+) >/tmp/nate-broll-tsc.log 2>&1; then
+  ok "TypeScript compiles"
+else
+  fail "TypeScript compile failed; see /tmp/nate-broll-tsc.log"
+fi
 
 echo ""
 echo "CMP Upload"

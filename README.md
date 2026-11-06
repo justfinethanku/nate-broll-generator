@@ -11,7 +11,13 @@ Automated b-roll pipeline for Nate Jones Media videos. Uses Codex + Remotion to 
 5. Composites onto source video with YouTube/Substack chyrons
 6. Packages and uploads finished deliverables directly to Content Master Pro via Supabase
 
-## Quick Start
+## Quick start
+
+For an editor workstation, prepare an Apple Silicon Mac with Git, Node.js 20+,
+pnpm, FFmpeg (including `ffprobe`), Python 3 and access to Codex. Follow the
+[setup guide](docs/SETUP_GUIDE.md) to install missing tools.
+
+Clone the repository and run setup from its root:
 
 ```bash
 git clone https://github.com/justfinethanku/nate-broll-generator.git
@@ -19,9 +25,31 @@ cd nate-broll-generator
 ./setup.sh codex
 ```
 
-Then download the chyron files (shared separately) into `assets/`.
+Setup installs the Remotion dependencies and copies skills, agent prompts and
+the plugin into `~/.codex/`. It writes `~/.codex/.env` and adds a marked hook to
+both `~/.zprofile` and `~/.zshrc`. Re-running it replaces the installed repo
+configuration; existing skill and agent files receive `.bak` copies.
 
-See [`CODEX.md`](./CODEX.md) and [`BOOTSTRAP_CODEX.md`](./BOOTSTRAP_CODEX.md) for the Codex flow.
+Press Enter at the AssemblyAI prompt to skip transcription configuration while
+checking the local tools. For a production run, obtain the key and the two
+chyron files through the [setup guide](docs/SETUP_GUIDE.md).
+
+Load the generated configuration into your current Bash or zsh session:
+
+```bash
+set -a
+. "$HOME/.codex/.env"
+set +a
+printf '%s\n' "$BROLL_HOME"
+```
+
+The printed path should be this clone. New zsh sessions load it automatically;
+setup cannot change the environment of the shell that launched it.
+
+Run the [local setup checks](docs/LOCAL_CHECKS.md) before processing a video.
+They check TypeScript, bundling and synthetic-media behavior without API keys
+or branded chyrons. See [CODEX.md](CODEX.md) for the installed workflow and
+[BOOTSTRAP_CODEX.md](BOOTSTRAP_CODEX.md) for workstation bootstrap instructions.
 
 ## Usage
 
@@ -60,12 +88,3 @@ scripts/           Python compositing scripts (FFmpeg-based)
 assets/            Chyron .mov files (not in git — download separately)
 docs/              Setup guides and troubleshooting
 ```
-
-## Requirements
-
-- macOS (Apple Silicon)
-- Node.js 20+, pnpm
-- FFmpeg
-- Python 3
-- Codex
-- AssemblyAI API key
