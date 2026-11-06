@@ -9,6 +9,8 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# shellcheck source=../scripts/shell_env.sh
+source "$REPO_ROOT/scripts/shell_env.sh"
 BROLL_HOME="${1:-$REPO_ROOT}"
 
 echo "Installing Claude Code b-roll configuration..."
@@ -36,15 +38,8 @@ echo "  Installed: ~/.claude/agents/broll-scout.md"
 echo "  Installed: ~/.claude/agents/broll-builder.md"
 
 # Set BROLL_HOME in ~/.claude/.env
-touch ~/.claude/.env
-if grep -q "^BROLL_HOME=" ~/.claude/.env 2>/dev/null; then
-  # Update existing
-  sed -i '' "s|^BROLL_HOME=.*|BROLL_HOME=$BROLL_HOME|" ~/.claude/.env
-  echo "  Updated BROLL_HOME in ~/.claude/.env"
-else
-  echo "BROLL_HOME=$BROLL_HOME" >> ~/.claude/.env
-  echo "  Added BROLL_HOME to ~/.claude/.env"
-fi
+upsert_shell_env_var "$HOME/.claude/.env" "BROLL_HOME" "$BROLL_HOME"
+echo "  Updated BROLL_HOME in ~/.claude/.env"
 
 echo ""
 echo "Done! Claude Code will now have access to the b-roll pipeline skill."
