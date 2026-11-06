@@ -18,5 +18,18 @@
     "@types/react-dom": "^18.3.0",
     "typescript": "^5.5.0"
   },
-  "packageManager": "pnpm@10.31.0+sha512.e3927388bfaa8078ceb79b748ffc1e8274e84d75163e67bc22e06c0d3aed43dd153151cbf11d7f8301ff4acb98c68bdc5cadf6989532801ffafe3b3e4a63c268"
+  "packageManager": "pnpm@10.31.0+sha512.e3927388bfaa8078ceb79b748ffc1e8274e84d75163e67bc22e06c0d3aed43dd153151cbf11d7f8301ff4acb98c68bdc5cadf6989532801ffafe3b3e4a63c268",
+  "pnpm": {
+    "overrides": {
+      "@babel/helper-compilation-targets>browserslist": "4.28.7",
+      "ajv>fast-uri": "3.1.9",
+      "browserslist>baseline-browser-mapping": "2.11.0",
+      "css-loader>postcss": "8.5.23",
+      "postcss>nanoid": "3.3.18",
+      "postcss>source-map-js": "1.2.2",
+      "postcss-modules-local-by-default>postcss-selector-parser": "7.1.6",
+      "postcss-modules-scope>postcss-selector-parser": "7.1.6",
+      "webpack>browserslist": "4.28.7"
+    }
+  }
 }
