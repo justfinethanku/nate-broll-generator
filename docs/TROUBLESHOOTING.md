@@ -86,7 +86,14 @@ Known missing logos (render as white boxes): `nasdaq.svg`, `amazon.svg`.
 XX-NNN-three word cue-SECONDS.MILLISECONDS.mp4
 ```
 
-The `multi_composite.py` script matches `-(\d+\.\d+)\.mp4$` — if the timecode is missing or malformed, the clip is silently skipped.
+Both compositors accept a final `-SECONDS.mp4` or `-SECONDS.MILLISECONDS.mp4`
+suffix. They print `SKIP (invalid timecode)` for MP4 files with a missing or
+malformed timecode. Non-MP4 files and directories are ignored.
+
+Both scripts sort clips by insertion time, skip clips before 20 seconds, and
+keep at least 15 seconds between accepted clip starts. Check the `SKIP` messages
+for clips removed by these spacing rules. This is a gap between start times;
+it does not trim long clips to prevent overlap.
 
 ## Pipeline stops / session crashes
 
