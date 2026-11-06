@@ -19,15 +19,10 @@ Requirements: ffmpeg, ffprobe in PATH
 """
 
 import os
-import re
 import sys
 import json
 import subprocess
-from pathlib import Path
-
-
-MIN_START = 20.0   # No b-roll before 20 seconds
-MIN_GAP = 15.0     # 15 seconds between clip start times
+from broll_timeline import apply_spacing_rules, parse_clips as parse_broll_clips
 
 
 def get_duration(filepath: str) -> float:
@@ -36,40 +31,6 @@ def get_duration(filepath: str) -> float:
         capture_output=True, text=True
     )
     return float(json.loads(result.stdout)["format"]["duration"])
-
-
-def parse_broll_clips(broll_dir: str) -> list[dict]:
-    clips = []
-    for f in sorted(os.listdir(broll_dir)):
-        if not f.endswith(".mp4"):
-            continue
-        match = re.search(r'-(\d+\.\d+)\.mp4$', f)
-        if match:
-            start_sec = float(match.group(1))
-            filepath = os.path.join(broll_dir, f)
-            dur = get_duration(filepath)
-            clips.append({
-                "file": filepath,
-                "start": start_sec,
-                "duration": dur,
-                "name": f,
-            })
-    clips.sort(key=lambda c: c["start"])
-    return clips
-
-
-def apply_spacing_rules(clips: list[dict]) -> list[dict]:
-    filtered = []
-    for c in clips:
-        if c["start"] < MIN_START:
-            print(f"  SKIP (before {MIN_START}s): {c['name']}")
-            continue
-        if filtered and (c["start"] - filtered[-1]["start"]) < MIN_GAP:
-            gap = c["start"] - filtered[-1]["start"]
-            print(f"  SKIP ({gap:.1f}s gap, need {MIN_GAP}s): {c['name']}")
-            continue
-        filtered.append(c)
-    return filtered
 
 
 def find_next_version(source_video: str) -> int:

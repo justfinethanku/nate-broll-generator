@@ -8,34 +8,20 @@ in two final output files (YouTube and Substack versions).
 """
 
 import os
-import re
 import sys
 import subprocess
-from pathlib import Path
+from broll_timeline import apply_spacing_rules, parse_clips
 
 BROLL_HOME = os.environ.get("BROLL_HOME", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHYRON_DIR = os.path.join(BROLL_HOME, "assets")
 YT_CHYRON = os.path.join(CHYRON_DIR, "Youtube Chyron.mov")
 SS_CHYRON = os.path.join(CHYRON_DIR, "Substack Chyron.mov")
 
-def parse_clips(broll_dir: str):
-    clips = []
-    for f in sorted(os.listdir(broll_dir)):
-        if not f.endswith(".mp4"): continue
-        match = re.search(r'-([\d\.]+)\.mp4$', f)
-        if match:
-            start_sec = float(match.group(1))
-            clips.append({
-                "file": os.path.join(broll_dir, f),
-                "start": start_sec,
-                "name": f,
-            })
-    clips.sort(key=lambda c: c["start"])
-    return clips
-
 def composite_all(source_video: str, broll_dir: str):
     clips = parse_clips(broll_dir)
     print(f"Found {len(clips)} B-roll clips.")
+    clips = apply_spacing_rules(clips)
+    print(f"Using {len(clips)} clips after spacing rules.")
     
     if not os.path.exists(YT_CHYRON) or not os.path.exists(SS_CHYRON):
         print(f"ERROR: Missing Chyrons! Check {CHYRON_DIR}")
