@@ -13,19 +13,26 @@ There is no `upload_video` or `create_video`. To upload a new file you must call
 
 ## Access token
 
-Personal access token for Jonathan Edwards' Vimeo Pro account (`/users/71611709`):
-
-```
-0a27d42b11b70cfadca8a323ff5c7d53
-```
-
-Scopes: Public, Private, Upload, Edit, Delete, Video Files.
-
-Store as env var before calling:
+Supply `VIMEO_TOKEN` from your secret manager before using the examples below.
+On a Fleet-enrolled machine, fetch the registered token at runtime:
 
 ```bash
-export VIMEO_TOKEN="0a27d42b11b70cfadca8a323ff5c7d53"
+export VIMEO_TOKEN="$(fleet get vimeo.access_token)"
 ```
+
+The Fleet alias is `VIMEO_ACCESS_TOKEN`. On other machines, set `VIMEO_TOKEN`
+through your own secret manager. Keep the value out of repository files and logs.
+The upload examples require an authenticated token with `upload` scope; enable
+other scopes only for the operations you need.
+
+A token was previously committed in this section. Treat that historical value
+as compromised. Removing it from the current file does not revoke it or remove
+it from Git history. Its current validity and revocation status are unverified.
+Track revocation and consumer updates separately before calling the exposure
+resolved.
+
+See Vimeo's [authentication token safety guidance](https://help.vimeo.com/hc/en-us/articles/12427891978641-Authentication-token-safety)
+and [token deactivation instructions](https://help.vimeo.com/hc/en-us/articles/12427907599761-Delete-or-deactivate-apps-and-tokens).
 
 ## Upload flow (tus protocol)
 

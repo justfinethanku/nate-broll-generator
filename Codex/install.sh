@@ -9,6 +9,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# shellcheck source=../scripts/shell_env.sh
+source "$REPO_ROOT/scripts/shell_env.sh"
 BROLL_HOME="${1:-$REPO_ROOT}"
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 ENV_FILE="$CODEX_HOME/.env"
@@ -20,33 +22,7 @@ ZSH_MARKER_START="# >>> nate-broll-generator >>>"
 ZSH_MARKER_END="# <<< nate-broll-generator <<<"
 
 upsert_env_var() {
-  local key="$1"
-  local value="$2"
-  local escaped_value
-  local tmp_file
-
-  mkdir -p "$(dirname "$ENV_FILE")"
-  touch "$ENV_FILE"
-  tmp_file="$(mktemp)"
-  escaped_value="$(printf "%s" "$value" | sed "s/'/'\\\\''/g")"
-  escaped_value="'$escaped_value'"
-
-  awk -v key="$key" -v value="$escaped_value" '
-    BEGIN { updated = 0 }
-    index($0, key "=") == 1 {
-      print key "=" value
-      updated = 1
-      next
-    }
-    { print }
-    END {
-      if (updated == 0) {
-        print key "=" value
-      }
-    }
-  ' "$ENV_FILE" > "$tmp_file"
-
-  mv "$tmp_file" "$ENV_FILE"
+  upsert_shell_env_var "$ENV_FILE" "$1" "$2"
 }
 
 copy_if_missing_from_claude_env() {
