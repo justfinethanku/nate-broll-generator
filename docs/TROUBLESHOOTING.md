@@ -95,6 +95,26 @@ keep at least 15 seconds between accepted clip starts. Check the `SKIP` messages
 for clips removed by these spacing rules. This is a gap between start times;
 it does not trim long clips to prevent overlap.
 
+## Scout manifest validation fails
+
+Check a newly planned manifest before building clips:
+
+```bash
+python3 "$BROLL_HOME/scripts/eval_scout_manifest.py" \
+  "$PWD/broll_manifest.md" "$PWD/chunked_transcript.json"
+```
+
+Use the actual chunked transcript filename. The cue must contain three exact
+consecutive transcript words, preserving case and punctuation. Its timecode is
+the first word's `start` in milliseconds divided by 1000, written with three
+decimal places. The filename must repeat the same prefix, zero-padded clip
+number, cue and timecode. A different filename time would move the clip in the
+compositor even if the manifest's Timecode column were correct.
+
+Run the provider-free regression checks from the repo root with
+`python3 scripts/test_scout_manifest.py`. This validates the planned scout stage;
+later `built`, `qc'd` and `rendered` statuses are not scout inputs.
+
 ## Pipeline stops / session crashes
 
 **Symptom:** Codex session ends before the pipeline finishes.
