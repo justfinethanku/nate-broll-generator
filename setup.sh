@@ -9,6 +9,8 @@
 set -e
 
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=scripts/shell_env.sh
+source "$REPO_ROOT/scripts/shell_env.sh"
 TARGET="${1:-codex}"
 
 case "$TARGET" in
@@ -123,32 +125,9 @@ if grep -q "^ASSEMBLYAI_API_KEY=" "$ENV_FILE" 2>/dev/null; then
   echo "  ✓ ASSEMBLYAI_API_KEY already configured"
 else
   echo "  AssemblyAI is used for video transcription."
-  read -p "  Enter AssemblyAI API Key (or press Enter to skip): " AKEY
+  read -r -p "  Enter AssemblyAI API Key (or press Enter to skip): " AKEY
   if [ -n "$AKEY" ]; then
-    SHELL_SAFE_AKEY="$(printf "%s" "$AKEY" | sed "s/'/'\\\\''/g")"
-    SHELL_SAFE_AKEY="'$SHELL_SAFE_AKEY'"
-    mkdir -p "$CONFIG_HOME"
-    touch "$ENV_FILE"
-    if grep -q "^ASSEMBLYAI_API_KEY=" "$ENV_FILE" 2>/dev/null; then
-      tmp_file="$(mktemp)"
-      awk -v value="$SHELL_SAFE_AKEY" '
-        BEGIN { updated = 0 }
-        index($0, "ASSEMBLYAI_API_KEY=") == 1 {
-          print "ASSEMBLYAI_API_KEY=" value
-          updated = 1
-          next
-        }
-        { print }
-        END {
-          if (updated == 0) {
-            print "ASSEMBLYAI_API_KEY=" value
-          }
-        }
-      ' "$ENV_FILE" > "$tmp_file"
-      mv "$tmp_file" "$ENV_FILE"
-    else
-      echo "ASSEMBLYAI_API_KEY=$SHELL_SAFE_AKEY" >> "$ENV_FILE"
-    fi
+    upsert_shell_env_var "$ENV_FILE" "ASSEMBLYAI_API_KEY" "$AKEY"
     echo "  ✓ Saved to $ENV_FILE"
   else
     echo "  ⚠ Skipped — you'll need to add this before running the pipeline"
