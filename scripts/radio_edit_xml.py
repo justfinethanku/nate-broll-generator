@@ -303,18 +303,23 @@ def ordered_overlap(a: list[str], b: list[str]) -> float:
 
 
 def lcs_ratio(shorter: list[str], longer: list[str]) -> float:
+    """Exact ordered containment, normalized by the first argument's length."""
     if not shorter or not longer:
         return 0.0
-    prev = [0] * (len(longer) + 1)
-    for token in shorter:
-        cur = [0]
-        for j, other in enumerate(longer, 1):
-            if token == other:
-                cur.append(prev[j - 1] + 1)
-            else:
-                cur.append(max(cur[-1], prev[j]))
-        prev = cur
-    return prev[-1] / len(shorter)
+    # Allison/Dix bit-string LCS: each set bit marks an increase in a DP row.
+    # https://www.cantab.net/users/mmlist/ll/Publications/1986IPL/
+    # Pack the smaller sequence to bound the integer width, but retain the
+    # original denominator: callers rely on this score being asymmetric.
+    packed, scanned = (shorter, longer) if len(shorter) <= len(longer) else (longer, shorter)
+    matches: dict[str, int] = {}
+    for index, token in enumerate(packed):
+        matches[token] = matches.get(token, 0) | (1 << index)
+    row = 0
+    for token in scanned:
+        candidates = row | matches.get(token, 0)
+        row = candidates & ~(candidates - ((row << 1) | 1))
+    # bin/count also supports Python 3.9 (int.bit_count requires 3.10).
+    return bin(row).count("1") / len(shorter)
 
 
 def mark_range(words: list[Word], start_i: int, end_i: int, reason: str) -> None:
