@@ -46,6 +46,7 @@
       max-width: 1220px;
       margin: 0 auto;
       padding: 28px 22px 64px;
+      overflow-wrap: anywhere;
     }
 
     .hero {
@@ -143,6 +144,11 @@
     .btn.primary {
       background: var(--cyan);
       color: #081719;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--ink);
+      outline-offset: 4px;
     }
 
     .btn:active {
@@ -626,7 +632,7 @@
 
     .station-head span {
       margin-top: 3px;
-      color: var(--muted);
+      color: #655e52;
       font-size: 12px;
     }
 
@@ -659,6 +665,10 @@
       margin-top: 12px;
       color: var(--muted);
       font-size: 14px;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
     }
 
     .decision-table {
@@ -756,7 +766,7 @@
 
     .status {
       min-height: 22px;
-      color: var(--olive);
+      color: #4b572f;
       font-size: 14px;
       font-weight: 900;
     }
@@ -1083,7 +1093,7 @@
         </article>
       </div>
 
-      <div class="assembly" aria-label="Five videos moving through production stations">
+      <div class="assembly" role="region" tabindex="0" aria-label="Five videos moving through production stations">
         <div class="assembly-track">
           <div class="station">
             <div class="station-head">
@@ -1149,7 +1159,7 @@
         <span class="legend-item"><span class="dot review"></span> Human review gate</span>
       </div>
 
-      <div class="loop" aria-label="Five video staggered workflow">
+      <div class="loop" role="region" tabindex="0" aria-label="Five video staggered workflow">
         <div class="loop-row">
           <div class="loop-label">Batch Start</div>
           <div class="task radio">Start radio edit for video 1</div>
@@ -1267,37 +1277,39 @@
         </div>
       </div>
 
-      <table class="decision-table">
-        <thead>
-          <tr>
-            <th>Decision</th>
-            <th>Current Recommendation</th>
-            <th>Owner</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Podcast description format</strong></td>
-            <td>Match the current published podcast style, then codify that as the standard output.</td>
-            <td>Adrienne / publishing owner</td>
-          </tr>
-          <tr>
-            <td><strong>YouTube description format</strong></td>
-            <td>Generate a description draft with chapters, title context, and upload notes.</td>
-            <td>Jon + editor</td>
-          </tr>
-          <tr>
-            <td><strong>Shorts review standard</strong></td>
-            <td>Five first-pass vertical clips, each self-contained, under two minutes, with clean starts and endings.</td>
-            <td>Editor / social media director</td>
-          </tr>
-          <tr>
-            <td><strong>Batch size</strong></td>
-            <td>Start with 2-5 videos per batch so the editor can feel the compounding workflow without overloading review.</td>
-            <td>Editor lead</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-scroll" role="region" tabindex="0" aria-label="Production format decisions">
+        <table class="decision-table">
+          <thead>
+            <tr>
+              <th scope="col">Decision</th>
+              <th scope="col">Current Recommendation</th>
+              <th scope="col">Owner</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Podcast description format</strong></td>
+              <td>Match the current published podcast style, then codify that as the standard output.</td>
+              <td>Adrienne / publishing owner</td>
+            </tr>
+            <tr>
+              <td><strong>YouTube description format</strong></td>
+              <td>Generate a description draft with chapters, title context, and upload notes.</td>
+              <td>Jon + editor</td>
+            </tr>
+            <tr>
+              <td><strong>Shorts review standard</strong></td>
+              <td>Five first-pass vertical clips, each self-contained, under two minutes, with clean starts and endings.</td>
+              <td>Editor / social media director</td>
+            </tr>
+            <tr>
+              <td><strong>Batch size</strong></td>
+              <td>Start with 2-5 videos per batch so the editor can feel the compounding workflow without overloading review.</td>
+              <td>Editor lead</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section class="section" id="brief">
@@ -1310,7 +1322,9 @@
       </div>
 
       <div class="copy-block">
-        <textarea id="briefText" readonly>We now have a two-stage production workflow for Nate Jones Media videos that is ready to explain to Adrienne and formalize for the editor.
+        <label for="briefText">Briefing summary (read only)</label>
+        <p id="copyHelp">Use either copy button, or select this summary and press Ctrl+C or Command+C.</p>
+        <textarea id="briefText" aria-describedby="copyHelp" readonly>We now have a two-stage production workflow for Nate Jones Media videos that is ready to explain to Adrienne and formalize for the editor.
 
 First, the radio edit pipeline turns raw talking-head footage into an editor-ready rough cut. It creates a word-level transcript, identifies the cleanest spoken flow, removes obvious false starts and repeated takes, and outputs an XML timeline the editor can import into their NLE. The editor still makes the judgment calls, but they start from an assembled timeline instead of a blank one.
 
@@ -1323,7 +1337,7 @@ The editor-facing rule is simple: raw media goes into the radio edit pipeline, t
 The remaining format decisions are podcast description style, final YouTube description structure, shorts review criteria, and the ideal batch size for a single editor.</textarea>
         <div>
           <button class="btn primary" type="button" data-copy-target="brief">Copy summary</button>
-          <span class="status" id="copyStatus" aria-live="polite"></span>
+          <span class="status" id="copyStatus" role="status" aria-live="polite" aria-atomic="true"></span>
         </div>
       </div>
     </section>
@@ -1338,19 +1352,32 @@ The remaining format decisions are podcast description style, final YouTube desc
     const briefText = document.getElementById("briefText");
 
     async function copyBrief() {
-      const text = briefText.value;
+      copyStatus.textContent = "Copying summary…";
+      let copied = false;
       try {
-        await navigator.clipboard.writeText(text);
-        copyStatus.textContent = "Copied.";
+        await navigator.clipboard.writeText(briefText.value);
+        copied = true;
       } catch (error) {
+        // Local files and browsers without clipboard permission may need this path.
+        const previousFocus = document.activeElement;
+        try {
+          briefText.focus({ preventScroll: true });
+          briefText.select();
+          copied = document.execCommand("copy");
+          if (copied) previousFocus?.focus({ preventScroll: true });
+        } catch (fallbackError) {
+          copied = false;
+        }
+      }
+
+      if (copied) {
+        copyStatus.textContent = "Copied.";
+      } else {
+        // Keep the text selected and visible for a manual keyboard copy.
         briefText.focus();
         briefText.select();
-        document.execCommand("copy");
-        copyStatus.textContent = "Copied.";
+        copyStatus.textContent = "Automatic copying is unavailable. The summary is selected; press Ctrl+C or Command+C to copy.";
       }
-      window.setTimeout(() => {
-        copyStatus.textContent = "";
-      }, 1800);
     }
 
     document.querySelectorAll("[data-copy-target='brief']").forEach((button) => {
