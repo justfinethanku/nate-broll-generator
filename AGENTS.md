@@ -11,6 +11,14 @@ This repository is a standalone editor handoff for Nate's team. Its local
 ([FLEET-516](https://linear.app/contentionmedia/issue/FLEET-516)). Fleet-managed
 machines follow the credential workflow in the [Fleet Handbook, 12a](https://linear.app/contentionmedia/document/the-fleet-handbook-f3713ba1f434).
 
+On a fleet-managed machine the setup below is already done another way
+([FLEET-267](https://linear.app/contentionmedia/issue/FLEET-267)). `BROLL_HOME`
+comes from the fleet vault: `fleet get BROLL_HOME` prints it, and `fleet sync`
+writes it to `~/.codex/.env`. `~/.claude/skills/broll-pipeline` there is the
+fleet skills library's copy of the skill, written for Jon's own videos. Running
+`claude/install.sh` on such a machine replaces that copy with this repository's
+editor version and writes a `~/.claude/.env` that the fleet does not read.
+
 ---
 
 ## First-Time Setup (Do This Automatically)
